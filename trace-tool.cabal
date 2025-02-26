@@ -1,0 +1,101 @@
+cabal-version: 2.2
+
+-- This file has been generated from package.yaml by hpack version 0.37.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           trace-tool
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/githubuser/trace-tool#readme>
+homepage:       https://github.com/githubuser/trace-tool#readme
+bug-reports:    https://github.com/githubuser/trace-tool/issues
+author:         Filip Stevanovic
+maintainer:     steva@kth.se
+copyright:      2025 Filip Stevanovic
+license:        BSD-3-Clause
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    CHANGELOG.md
+
+source-repository head
+  type: git
+  location: https://github.com/githubuser/trace-tool
+
+library
+  exposed-modules:
+      Data.Expression
+      Data.ExpressionParser
+      Data.FOL.Formula
+      Data.Trace.CanonicalProgram
+      Data.Trace.Program
+      Data.Trace.ProgramParser
+      Data.Trace.TraceLogic
+      Data.Trace.TraceLogicParser
+      Lib
+      Util.ParserUtil
+      Util.PrettyUtil
+  other-modules:
+      Paths_trace_tool
+  autogen-modules:
+      Paths_trace_tool
+  hs-source-dirs:
+      src
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
+  build-depends:
+      base >=4.7 && <5
+    , containers
+    , hasmtlib ==2.8.*
+    , megaparsec ==9.5.*
+    , optparse-applicative
+    , parser-combinators
+    , prettyprinter >=1.7.1 && <1.8
+    , prettyprinter-ansi-terminal
+    , text >=2.0 && <2.2
+  default-language: Haskell2010
+
+executable trace-tool-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_trace_tool
+  autogen-modules:
+      Paths_trace_tool
+  hs-source-dirs:
+      app
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , containers
+    , hasmtlib ==2.8.*
+    , megaparsec ==9.5.*
+    , optparse-applicative
+    , parser-combinators
+    , prettyprinter >=1.7.1 && <1.8
+    , prettyprinter-ansi-terminal
+    , text >=2.0 && <2.2
+    , trace-tool
+  default-language: Haskell2010
+
+test-suite trace-tool-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_trace_tool
+  autogen-modules:
+      Paths_trace_tool
+  hs-source-dirs:
+      test
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , containers
+    , hasmtlib ==2.8.*
+    , megaparsec ==9.5.*
+    , optparse-applicative
+    , parser-combinators
+    , prettyprinter >=1.7.1 && <1.8
+    , prettyprinter-ansi-terminal
+    , text >=2.0 && <2.2
+    , trace-tool
+  default-language: Haskell2010
