@@ -28,6 +28,7 @@ library
       Data.Expression
       Data.ExpressionParser
       Data.FOL.Formula
+      Data.FOL.SMTUtil
       Data.Trace.CanonicalProgram
       Data.Trace.Program
       Data.Trace.ProgramParser
