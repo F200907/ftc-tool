@@ -14,6 +14,8 @@ module Data.Trace.Program
     bigStep',
     bigStep,
     rename,
+    methodBody,
+    (#),
   )
 where
 
@@ -36,6 +38,9 @@ data Statement
   | Condition BooleanExpr Statement Statement
   | Method MethodName
   deriving (Show)
+
+(#) :: Statement -> Statement -> Statement
+(#) = Sequence
 
 indent' :: Doc ann -> Doc ann
 indent' = indent 2
@@ -94,6 +99,9 @@ _testProgram = Program {methods = [("down", _testStatement), ("up", _testStateme
 
 emptyProgram :: Program
 emptyProgram = Program [] Nothing
+
+methodBody :: Program -> MethodName -> Maybe Statement
+methodBody prog m = lookup m (methods prog)
 
 smallStep :: Program -> (Maybe Statement, Valuation)
 smallStep program@(Program {main}) = case main of

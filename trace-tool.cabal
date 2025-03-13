@@ -29,6 +29,10 @@ library
       Data.ExpressionParser
       Data.FOL.Formula
       Data.FOL.SMTUtil
+      Data.FTC.Admissibility
+      Data.FTC.FiniteTraceCalculus
+      Data.FTC.SMTFormula
+      Data.FTC.SMTPredicate
       Data.Trace.CanonicalProgram
       Data.Trace.Program
       Data.Trace.ProgramParser

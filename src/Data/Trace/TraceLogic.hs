@@ -4,7 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
-module Data.Trace.TraceLogic (TraceFormula (..), strongestTraceFormula', strongestTraceFormula, BinaryRelation (..), substitute) where
+module Data.Trace.TraceLogic (TraceFormula (..), strongestTraceFormula', strongestTraceFormula, BinaryRelation (..), substitute, unfold) where
 
 import Data.Expression
 import Data.Maybe (fromMaybe)
@@ -106,3 +106,7 @@ instance (Renameable TraceFormula) where
   rename (Disjunction a b) x x' = Disjunction (rename a x x') (rename b x x')
   rename (Chop a b) x x' = Chop (rename a x x') (rename b x x')
   rename (Mu r phi) x x' = Mu r (rename phi x x')
+
+unfold :: TraceFormula -> TraceFormula
+unfold m@(Mu x f) = substitute f x m
+unfold t = t

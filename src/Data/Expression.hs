@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
-module Data.Expression (VariableName, ArithmeticExpr (..), BooleanExpr (..), Valuation, Renameable (..), Substitutable (..), Evaluable (..)) where
+module Data.Expression (VariableName, ArithmeticExpr (..), BooleanExpr (..), Valuation, Renameable (..), Substitutable (..), Evaluable (..), Variables(..)) where
 
 import Data.Map.Strict (Map, lookup)
 import Data.Maybe (fromMaybe)
@@ -18,6 +18,8 @@ import Prettyprinter
 import Prettyprinter.Render.Terminal
 import Util.PrettyUtil
 import Prelude hiding (lookup)
+import Data.Set (Set)
+import qualified Data.Set as Set
 
 type VariableName = Text
 
@@ -77,6 +79,28 @@ instance {-# OVERLAPS #-} PrettyAnsi BooleanExpr where
 
 _testExpression :: BooleanExpr
 _testExpression = And BTrue (And (Not BFalse) (And (Equal (Plus (Constant 0) (AVar "x")) (Minus (Constant 1) (Constant (-7)))) (LessThan (Times (AVar "y") (AVar "y")) (Constant 19))))
+
+class Variables a where
+  variables :: a -> Set Text
+
+instance (Variables ArithmeticExpr) where
+  variables :: ArithmeticExpr -> Set Text
+  variables (Constant _) = Set.empty
+  variables (AVar x) = Set.singleton x
+  variables (Negation a) = variables a
+  variables (Plus a b) = variables a `Set.union` variables b
+  variables (Minus a b) = variables a `Set.union` variables b
+  variables (Times a b) = variables a `Set.union` variables b
+
+instance (Variables BooleanExpr) where
+  variables :: BooleanExpr -> Set Text
+  variables BTrue = Set.empty
+  variables BFalse = Set.empty
+  variables (Not a) = variables a 
+  variables (And a b) = variables a `Set.union` variables b
+  variables (Or a b) = variables a `Set.union` variables b
+  variables (Equal a b) = variables a `Set.union` variables b
+  variables (LessThan a b) = variables a `Set.union` variables b
 
 class Evaluable a b where
   evaluate :: a -> Valuation -> b
