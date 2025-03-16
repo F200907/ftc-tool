@@ -30,6 +30,7 @@ library
       Data.FOL.Formula
       Data.FOL.SMTUtil
       Data.FTC.Admissibility
+      Data.FTC.Contract
       Data.FTC.FiniteTraceCalculus
       Data.FTC.SMTFormula
       Data.FTC.SMTPredicate
