@@ -90,3 +90,5 @@ mc cs i (Sequence (Method m) s) phi = (Predicate (StatePredicate i pre) &&& Pred
   where
     (pre, post) = fromMaybe (error "FIXME: no contract found for a procedure") (lookupContract m cs)
 mc cs i (Sequence (Sequence s1 s2) s3) phi = mc cs i (s1 # (s2 # s3)) phi
+
+-- NOTE: maybe use a proof obligation monad which can be converted into an SMT friendly formula
