@@ -30,6 +30,7 @@ instance (Stateful ArithmeticExpr) where
   stateful :: ArithmeticExpr -> Int -> ArithmeticExpr
   stateful (Constant c) _ = Constant c
   stateful (AVar x) i = AVar $ smtOp (x <+> indexedState i)
+  stateful (LVar x) i = LVar $ smtOp (x <+> indexedState (i - 1))
   stateful (Negation a) i = Negation (stateful a i)
   stateful (Plus a b) i = Plus (stateful a i) (stateful b i)
   stateful (Minus a b) i = Minus (stateful a i) (stateful b i)
@@ -57,6 +58,7 @@ instance (SMTify ArithmeticExpr) where
   smtify :: ArithmeticExpr -> Text
   smtify (Constant c) = pack (show c)
   smtify (AVar x) = x
+  smtify (LVar x) = x
   smtify (Negation a) = "-" <> smtify a
   smtify (Plus a b) = smtOp ("+" <+> smtify a <+> smtify b)
   smtify (Minus a b) = smtOp ("-" <+> smtify a <+> smtify b)

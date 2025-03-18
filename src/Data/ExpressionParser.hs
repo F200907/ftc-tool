@@ -15,6 +15,7 @@ data BExpr
   | BNot' BExpr
   | BAnd' BExpr BExpr
   | BOr' BExpr BExpr
+  | BImplies' BExpr BExpr
   | Equal' AExpr AExpr
   | NotEqual' AExpr AExpr
   | LessThan' AExpr AExpr
@@ -26,6 +27,7 @@ data BExpr
 data AExpr
   = Constant' Int
   | AVar' Text
+  | LVar' Text
   | Negation' AExpr
   | Plus' AExpr AExpr
   | Minus' AExpr AExpr
@@ -39,6 +41,7 @@ type BParser = Parser BExpr
 toArithmeticExpr :: AExpr -> ArithmeticExpr
 toArithmeticExpr (Constant' c) = Constant c
 toArithmeticExpr (AVar' x) = AVar x
+toArithmeticExpr (LVar' x) = LVar x
 toArithmeticExpr (Negation' a) = Negation (toArithmeticExpr a)
 toArithmeticExpr (Plus' a b) = Plus (toArithmeticExpr a) (toArithmeticExpr b)
 toArithmeticExpr (Minus' a b) = Minus (toArithmeticExpr a) (toArithmeticExpr b)
@@ -50,6 +53,7 @@ toBooleanExpr BFalse' = BFalse
 toBooleanExpr (BAnd' a b) = And (toBooleanExpr a) (toBooleanExpr b)
 toBooleanExpr (BNot' a) = Not (toBooleanExpr a)
 toBooleanExpr (BOr' a b) = Or (toBooleanExpr a) (toBooleanExpr b)
+toBooleanExpr (BImplies' a b) = Or (Not (toBooleanExpr a)) (toBooleanExpr b)
 toBooleanExpr (Equal' a b) = Equal (toArithmeticExpr a) (toArithmeticExpr b)
 toBooleanExpr (NotEqual' a b) = Not (Equal (toArithmeticExpr a) (toArithmeticExpr b))
 toBooleanExpr (LessThan' a b) = LessThan (toArithmeticExpr a) (toArithmeticExpr b)
@@ -99,8 +103,19 @@ geqToken = ">="
 neqToken :: Text
 neqToken = "!="
 
+impliesToken :: Text
+impliesToken = "=>"
+
+pLVariable :: AParser
+pLVariable = LVar' <$> lexeme (do
+  _ <- symbol "#"
+  identifier)
+
 pAVariable :: AParser
 pAVariable = AVar' <$> lexeme identifier
+
+pVariable :: AParser
+pVariable = choice [pAVariable, pLVariable]
 
 pConstant :: AParser
 pConstant = Constant' <$> integer
@@ -109,7 +124,7 @@ pATerm :: AParser
 pATerm =
   choice
     [ parens pAExp,
-      pAVariable,
+      pVariable,
       pConstant
     ]
 
@@ -164,8 +179,8 @@ booleanOperatorTable :: [[Operator Parser BExpr]]
 booleanOperatorTable =
   [ [prefix notToken BNot'],
     [ binary andToken BAnd',
-      binary orToken BOr'
-    ]
+      binary orToken BOr'],
+      [binary impliesToken BImplies']
   ]
 
 pBExp :: BParser

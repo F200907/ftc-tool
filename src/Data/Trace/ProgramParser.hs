@@ -14,8 +14,8 @@ import Data.Trace.Program (MethodDefinition, Program (Program, main, methods), S
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import Util.ParserUtil
-import qualified Data.Map as Map
 import Data.FTC.Contract (Contract)
+import Data.Expression (BooleanExpr(BTrue))
 
 type SParser = Parser Statement
 
@@ -85,10 +85,10 @@ parseStatement :: SParser
 parseStatement = pSequence
 
 parseContract :: Parser Contract
-parseContract = do
+parseContract = choice [try (do
   pre <- brackets parseBooleanExpr
   post <- brackets parseBooleanExpr
-  return (pre, post)
+  return (pre, post)), return (BTrue, BTrue)]
 
 parseMethodDefinition :: Parser MethodDefinition
 parseMethodDefinition = do
@@ -118,4 +118,7 @@ parseProgram = programParser' (Program {methods = [], main = Nothing})
         ]
 
 _testParse :: IO ()
-_testParse = parseTest parseProgram "even{if x = 0 then y := 1 else x := x - 1; odd()}\n odd{if x = 0 then \n y := 0 \n\t else \n \t x := x - 1; even()} /* this is a test */ x:=3;even()"
+_testParse = parseTest parseProgram "[x >= 0][(#x = 2)=>(y=1)]even{if x = 0 then y := 1 else x := x - 1; odd()}\n odd{if x = 0 then \n y := 0 \n\t else \n \t x := x - 1; even()} /* this is a test */ x:=3;even()"
+
+_simpleProg :: IO ()
+_simpleProg = parseTest parseProgram "[x >= 0][x = 0] m{if x > 0 then (x := x - 1; m()) else skip} m()"

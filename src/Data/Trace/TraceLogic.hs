@@ -12,7 +12,6 @@ import qualified Data.Set as Set
 import Data.Text (Text, unpack)
 import Data.Trace.Program (Program (Program, main, methods), Statement (Assignment, Condition, Method, Sequence, Skip), lookupMethod)
 import Prettyprinter
-import Prettyprinter.Render.Terminal
 import Util.PrettyUtil
 
 type RecursiveVar = Text
@@ -42,18 +41,6 @@ instance Pretty TraceFormula where
   pretty (Disjunction a b) = parens (pretty a <+> lor <+> pretty b)
   pretty (Chop a b) = pretty a <+> arc <+> pretty b
   pretty (Mu x phi) = mu <> "X_" <> pretty x <> "." <> parens (pretty phi)
-
-instance {-# OVERLAPS #-} PrettyAnsi TraceFormula where
-  prettyAnsi :: TraceFormula -> Doc AnsiStyle
-  prettyAnsi (StateFormula p) = prettyAnsi p
-  prettyAnsi (BinaryRelation Id) = annotate keywordStyle "Id"
-  prettyAnsi (BinaryRelation (Sb x a)) = "Sb_" <> prettyAnsi x <> "^" <> prettyAnsi a
-  prettyAnsi (BinaryRelation (PrePostConditions a b)) = brackets (prettyAnsi a <> "," <+> prettyAnsi b)
-  prettyAnsi (RecursiveVariable x) = "X_" <> prettyAnsi x
-  prettyAnsi (Conjunction a b) = parens (prettyAnsi a <+> annotate logicStyle land <+> prettyAnsi b)
-  prettyAnsi (Disjunction a b) = parens (prettyAnsi a <+> annotate logicStyle lor <+> prettyAnsi b)
-  prettyAnsi (Chop a b) = prettyAnsi a <+> annotate logicStyle arc <+> prettyAnsi b
-  prettyAnsi (Mu x phi) = annotate italicized mu <> "X_" <> prettyAnsi x <> "." <> parens (prettyAnsi phi)
 
 _testTrace :: TraceFormula
 _testTrace = Chop (BinaryRelation Id) (Mu "even" (Disjunction (Conjunction (StateFormula (Equal (AVar "x") (Constant 0))) (Chop (BinaryRelation Id) (BinaryRelation (Sb "y" (Constant 1))))) (Conjunction (StateFormula (Not (Equal (AVar "x") (Constant 0)))) (Chop (BinaryRelation Id) (Chop (BinaryRelation (Sb "x" (Minus (AVar "x") (Constant 1)))) (Chop (BinaryRelation Id) (Mu "odd" (Disjunction (Conjunction (StateFormula (Equal (AVar "x") (Constant 0))) (Chop (BinaryRelation Id) (BinaryRelation (Sb "y" (Constant 0))))) (Conjunction (StateFormula (Not (Equal (AVar "x") (Constant 0)))) (Chop (BinaryRelation Id) (Chop (BinaryRelation (Sb "x" (Minus (AVar "x") (Constant 1)))) (Chop (BinaryRelation Id) (RecursiveVariable "even")))))))))))))

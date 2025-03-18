@@ -8,11 +8,12 @@ import Data.FTC.SMTFormula (SMTFormula (Not, Predicate), (&&&), (==>))
 import Data.FTC.SMTPredicate (SMTPredicate (AssignmentPredicate, IdentityPredicate, StatePredicate), predicate)
 import Data.Set (Set)
 import Data.Text (Text)
-import Data.Trace.Program (Statement (Assignment, Condition, Method, Sequence, Skip), (#))
+import Data.Trace.Program (Statement (Assignment, Condition, Method, Sequence, Skip), (#), lookupMethod, Program (methods), contract, contracts)
 import Data.Trace.TraceLogic (TraceFormula (Chop, Mu, StateFormula))
 import Prelude hiding (id)
 import Data.Maybe (fromMaybe)
 import Data.FTC.Contract (lookupContract, Contracts)
+import Data.Trace.Program
 
 id :: Int -> SMTFormula
 id i = Predicate (IdentityPredicate i)
@@ -65,7 +66,7 @@ ftc i (Sequence (Condition b s1 s2) s) (Chop phi psi) xs =
 ftc i (Method m) (Chop phi (Mu x psi)) xs = undefined
 ftc _ _ _ _ = undefined
 
-mc :: Contracts ->  Int -> Statement -> BooleanExpr -> SMTFormula
+mc :: Contracts -> Int -> Statement -> BooleanExpr -> SMTFormula
 mc _ i (Assignment x a) phi = sb i x a ==> Predicate (StatePredicate (i + 1) phi)
 mc _ i Skip phi = id i ==> Predicate (StatePredicate (i + 1) phi)
 -- if b then s1 else s2
@@ -75,7 +76,7 @@ mc cs i (Condition b s1 s2) phi =
             &&& (Not bPred ==> mc cs (i + 1) s2 phi)
   where
     bPred = Predicate (predicate i (StateFormula b))
-mc cs i (Method m) phi = (Predicate (StatePredicate i pre) &&& Predicate (StatePredicate i post)) ==> Predicate (StatePredicate (i + 1) phi)
+mc cs i (Method m) phi = (Predicate (StatePredicate i pre) &&& Predicate (StatePredicate (i + 1) post)) ==> Predicate (StatePredicate (i + 1) phi)
   where
     (pre, post) = fromMaybe (error "FIXME: no contract found for a procedure") (lookupContract m cs)
 mc cs i (Sequence (Assignment x a) s) phi = sb i x a ==> mc cs (i + 1) s phi
@@ -86,9 +87,14 @@ mc cs i (Sequence (Condition b s1 s2) s) phi =
             &&& (Not bPred ==> mc cs (i + 1) (s2 # s) phi)
   where
     bPred = Predicate (predicate i (StateFormula b))
-mc cs i (Sequence (Method m) s) phi = (Predicate (StatePredicate i pre) &&& Predicate (StatePredicate i post)) ==> mc cs (i + 1) s phi
+mc cs i (Sequence (Method m) s) phi = (Predicate (StatePredicate i pre) &&& Predicate (StatePredicate (i + 1) post)) ==> mc cs (i + 1) s phi
   where
     (pre, post) = fromMaybe (error "FIXME: no contract found for a procedure") (lookupContract m cs)
 mc cs i (Sequence (Sequence s1 s2) s3) phi = mc cs i (s1 # (s2 # s3)) phi
 
+_mc p m = case lookupMethod m (methods p) of
+  Just s -> case contract m (methods p) of
+    Just (_, post) -> mc (contracts p) 1 s post
+    _ -> undefined
+  _ -> undefined
 -- NOTE: maybe use a proof obligation monad which can be converted into an SMT friendly formula

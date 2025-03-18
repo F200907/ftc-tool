@@ -17,6 +17,9 @@ module Data.Trace.Program
     methodBody,
     lookupMethod,
     (#),
+    contracts,
+    contract,
+    simpleProg,
   )
 where
 
@@ -25,8 +28,6 @@ import Data.Map.Strict (empty, insert)
 import Data.Maybe (catMaybes)
 import Data.Text (Text)
 import Prettyprinter
-import Prettyprinter.Render.Terminal (AnsiStyle, italicized)
-import Util.PrettyUtil
 import Data.FTC.Contract (Contract, Contracts, trueContract)
 import qualified Data.Map as Map
 
@@ -56,14 +57,6 @@ instance Pretty Statement where
   pretty (Condition b s1 s2) = parens $ "if" <+> pretty b <+> "then" <> line <> vsep [indent' (pretty s1), "else", indent' (pretty s2)]
   pretty (Method m) = pretty m <> parens emptyDoc
 
-instance {-# OVERLAPS #-} PrettyAnsi Statement where
-  prettyAnsi :: Statement -> Doc AnsiStyle
-  prettyAnsi Skip = annotate skipStyle "skip"
-  prettyAnsi (Assignment x a) = prettyAnsi x <+> ":=" <+> prettyAnsi a
-  prettyAnsi (Sequence s1 s2) = prettyAnsi s1 <> ";" <> line <> prettyAnsi s2
-  prettyAnsi (Condition b s1 s2) = parens $ annotate keywordStyle "if" <+> prettyAnsi b <+> annotate keywordStyle "then" <> line <> vsep [indent' (prettyAnsi s1), annotate keywordStyle "else", indent' (prettyAnsi s2)]
-  prettyAnsi (Method m) = annotate italicized (prettyAnsi m) <> parens emptyDoc
-
 _testStatement :: Statement
 _testStatement =
   Sequence
@@ -86,16 +79,16 @@ instance Pretty Program where
         methods
         ++ map pretty (catMaybes [main])
 
-instance {-# OVERLAPS #-} PrettyAnsi Program where
-  prettyAnsi :: Program -> Doc AnsiStyle
-  prettyAnsi (Program {methods, main}) =
-    vsep $
-      map
-        ( \(name, _b, statement) ->
-            prettyAnsi name <+> braces (line <> prettyAnsi statement <> line) <> line
-        )
-        methods
-        ++ map prettyAnsi (catMaybes [main])
+instance (Renameable Statement) where
+  rename :: Statement -> VariableName -> VariableName -> Statement
+  rename Skip _ _ = Skip
+  rename (Assignment y a) x x'
+    | y == x = Assignment x' (rename a x x')
+    | otherwise = Assignment y (rename a x x')
+  rename (Sequence s1 s2) x x' = Sequence (rename s1 x x') (rename s2 x x')
+  rename (Condition b s1 s2) x x' = Condition (rename b x x') (rename s1 x x') (rename s2 x x')
+  rename s@(Method _) _ _ = s
+
 
 _testProgram :: Program
 _testProgram = Program {methods = [("down", trueContract, _testStatement), ("up", trueContract, _testStatement)], main = Just _testStatement}
@@ -104,7 +97,7 @@ emptyProgram :: Program
 emptyProgram = Program [] Nothing
 
 lookupMethod :: MethodName -> [MethodDefinition] -> Maybe Statement
-lookupMethod m [] = Nothing
+lookupMethod _ [] = Nothing
 lookupMethod m ((m', _, b) : xs)
   | m == m' = return b
   | otherwise = lookupMethod m xs
@@ -112,6 +105,16 @@ lookupMethod m ((m', _, b) : xs)
 methodBody :: Program -> MethodName -> Maybe Statement
 methodBody prog m = lookupMethod m (methods prog)
 
+contract :: MethodName -> [MethodDefinition] -> Maybe Contract
+contract _ [] = Nothing
+contract m ((m', c, _) : xs)
+  | m == m' = return c
+  | otherwise = contract m xs
+
+contracts :: Program -> Contracts
+contracts prog = foldl (\acc (m, c, _) -> Map.insert m c acc) Map.empty (methods prog)
+
+-- SOS
 smallStep :: Program -> (Maybe Statement, Valuation)
 smallStep program@(Program {main}) = case main of
   Just s -> smallStep' program empty s
@@ -134,12 +137,6 @@ bigStep' :: Program -> Valuation -> Maybe Statement -> Valuation
 bigStep' _ v Nothing = v
 bigStep' program v (Just s) = let (s', v') = smallStep' program v s in bigStep' program v' s'
 
-instance (Renameable Statement) where
-  rename :: Statement -> VariableName -> VariableName -> Statement
-  rename Skip _ _ = Skip
-  rename (Assignment y a) x x'
-    | y == x = Assignment x' (rename a x x')
-    | otherwise = Assignment y (rename a x x')
-  rename (Sequence s1 s2) x x' = Sequence (rename s1 x x') (rename s2 x x')
-  rename (Condition b s1 s2) x x' = Condition (rename b x x') (rename s1 x x') (rename s2 x x')
-  rename s@(Method _) _ _ = s
+--
+simpleProg :: Program
+simpleProg = Program {methods = [("m",(Not (LessThan (AVar "x") (Constant 0)),Equal (AVar "x") (Constant 0)),Condition (Not (Or (LessThan (AVar "x") (Constant 0)) (Equal (AVar "x") (Constant 0)))) (Sequence (Assignment "x" (Minus (AVar "x") (Constant 1))) (Method "m")) Skip)], main = Just (Method "m")}

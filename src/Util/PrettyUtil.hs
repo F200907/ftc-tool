@@ -4,7 +4,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Util.PrettyUtil (lor, land, arc, mu, lnot, top, bot, tryToSuperscript, tryToSubscript, keywordStyle, PrettyAnsi (..), skipStyle, logicStyle, implies, forAll, exists) where
+module Util.PrettyUtil (lor, land, arc, mu, lnot, top, bot, tryToSuperscript, tryToSubscript, implies, forAll, exists) where
 
 import Data.Map.Strict (Map, fromList)
 import qualified Data.Map.Strict as Map
@@ -12,7 +12,6 @@ import Data.Maybe (fromMaybe)
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Prettyprinter
-import Prettyprinter.Render.Terminal
 
 lor :: Doc ann
 lor = "∨"
@@ -51,22 +50,6 @@ instance (Pretty a, Pretty b) => Pretty (Map a b) where
 instance (Pretty a) => Pretty (Set a) where
   pretty :: Set a -> Doc ann
   pretty s = encloseSep "{" "}" "," $ map pretty (Set.toList s)
-
-keywordStyle :: AnsiStyle
-keywordStyle = color Magenta <> bold
-
-skipStyle :: AnsiStyle
-skipStyle = color Blue <> italicized
-
-logicStyle :: AnsiStyle
-logicStyle = color Cyan
-
-class (Pretty a) => PrettyAnsi a where
-  prettyAnsi :: a -> Doc AnsiStyle
-
-instance {-# OVERLAPPABLE #-} (Pretty a) => PrettyAnsi a where
-  prettyAnsi :: a -> Doc AnsiStyle
-  prettyAnsi = pretty
 
 superscriptTable :: Map Char Char
 superscriptTable =

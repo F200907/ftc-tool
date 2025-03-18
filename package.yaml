@@ -28,7 +28,6 @@ dependencies:
 - parser-combinators
 - hasmtlib >= 2.8 && < 2.9
 - containers
-- prettyprinter-ansi-terminal
 - optparse-applicative
 - mtl
 

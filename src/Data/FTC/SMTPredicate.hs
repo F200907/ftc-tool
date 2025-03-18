@@ -3,7 +3,7 @@
 
 module Data.FTC.SMTPredicate (SMTPredicate (..), predicate) where
 
-import Data.Expression (ArithmeticExpr, BooleanExpr, Substitutable (substitute), VariableName)
+import Data.Expression (ArithmeticExpr, BooleanExpr, VariableName)
 import Data.FOL.SMTUtil (SMTify (..), Stateful (stateful), indexedState, smtOp, (<+>))
 import Data.Text (Text)
 import Data.Trace.TraceLogic (BinaryRelation (Id, Sb), TraceFormula (BinaryRelation, Chop, Conjunction, Disjunction, Mu, RecursiveVariable, StateFormula), unfold)

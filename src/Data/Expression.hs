@@ -11,11 +11,9 @@ import Data.Text (Text, unpack)
 import Prettyprinter
   ( Doc,
     Pretty (pretty),
-    annotate,
     parens,
     (<+>),
   )
-import Prettyprinter.Render.Terminal
 import Util.PrettyUtil
 import Prelude hiding (lookup)
 import Data.Set (Set)
@@ -28,6 +26,7 @@ type Valuation = Map VariableName Int
 data ArithmeticExpr
   = Constant Int
   | AVar VariableName
+  | LVar VariableName
   | Negation ArithmeticExpr
   | Plus ArithmeticExpr ArithmeticExpr
   | Minus ArithmeticExpr ArithmeticExpr
@@ -40,6 +39,7 @@ instance Pretty ArithmeticExpr where
     | c >= 0 = pretty c
     | otherwise = parens (pretty c)
   pretty (AVar x) = pretty x
+  pretty (LVar x) = "#" <> pretty x
   pretty (Negation (AVar x)) = parens ("-" <> pretty x)
   pretty (Negation (Constant c)) = parens ("-" <> pretty c)
   pretty (Negation a) = parens ("-" <> parens (pretty a))
@@ -67,16 +67,6 @@ instance Pretty BooleanExpr where
   pretty (Equal a b) = parens (pretty a <+> "=" <+> pretty b)
   pretty (LessThan a b) = parens (pretty a <+> "<" <+> pretty b)
 
-instance {-# OVERLAPS #-} PrettyAnsi BooleanExpr where
-  prettyAnsi :: BooleanExpr -> Doc AnsiStyle
-  prettyAnsi BTrue = annotate logicStyle top
-  prettyAnsi BFalse = annotate logicStyle bot
-  prettyAnsi (Not a) = annotate logicStyle lnot <> prettyAnsi a
-  prettyAnsi (And a b) = parens (prettyAnsi a <+> annotate logicStyle land <+> prettyAnsi b)
-  prettyAnsi (Or a b) = parens (prettyAnsi a <+> annotate logicStyle lor <+> prettyAnsi b)
-  prettyAnsi (Equal a b) = parens (prettyAnsi a <+> "=" <+> prettyAnsi b)
-  prettyAnsi (LessThan a b) = parens (prettyAnsi a <+> "<" <+> prettyAnsi b)
-
 _testExpression :: BooleanExpr
 _testExpression = And BTrue (And (Not BFalse) (And (Equal (Plus (Constant 0) (AVar "x")) (Minus (Constant 1) (Constant (-7)))) (LessThan (Times (AVar "y") (AVar "y")) (Constant 19))))
 
@@ -87,6 +77,7 @@ instance (Variables ArithmeticExpr) where
   variables :: ArithmeticExpr -> Set Text
   variables (Constant _) = Set.empty
   variables (AVar x) = Set.singleton x
+  variables (LVar x) = Set.singleton x
   variables (Negation a) = variables a
   variables (Plus a b) = variables a `Set.union` variables b
   variables (Minus a b) = variables a `Set.union` variables b
@@ -109,6 +100,7 @@ instance (Evaluable ArithmeticExpr Int) where
   evaluate :: ArithmeticExpr -> Valuation -> Int
   evaluate (Constant c) _ = c
   evaluate (AVar x) v = fromMaybe (error $ "couldn't find value for " ++ unpack x) (lookup x v)
+  evaluate (LVar x) v = fromMaybe (error $ "couldn't find value for " ++ unpack x) (lookup x v)
   evaluate (Negation a) v = -(evaluate a v)
   evaluate (Plus a b) v = evaluate a v + evaluate b v
   evaluate (Minus a b) v = evaluate a v - evaluate b v
@@ -131,6 +123,9 @@ instance (Substitutable ArithmeticExpr VariableName ArithmeticExpr) where
   substitute :: ArithmeticExpr -> VariableName -> ArithmeticExpr -> ArithmeticExpr
   substitute c@(Constant _) _ _ = c
   substitute a@(AVar v) x x'
+    | v == x = x'
+    | otherwise = a
+  substitute a@(LVar v) x x'
     | v == x = x'
     | otherwise = a
   substitute (Negation a) x x' = Negation (substitute a x x')

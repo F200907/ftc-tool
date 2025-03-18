@@ -27,7 +27,6 @@ library
   exposed-modules:
       Data.Expression
       Data.ExpressionParser
-      Data.FOL.Formula
       Data.FOL.SMTUtil
       Data.FTC.Admissibility
       Data.FTC.Contract
@@ -59,7 +58,6 @@ library
     , optparse-applicative
     , parser-combinators
     , prettyprinter >=1.7.1 && <1.8
-    , prettyprinter-ansi-terminal
     , text >=2.0 && <2.2
   default-language: Haskell2010
 
@@ -81,7 +79,6 @@ executable trace-tool-exe
     , optparse-applicative
     , parser-combinators
     , prettyprinter >=1.7.1 && <1.8
-    , prettyprinter-ansi-terminal
     , text >=2.0 && <2.2
     , trace-tool
   default-language: Haskell2010
@@ -105,7 +102,6 @@ test-suite trace-tool-test
     , optparse-applicative
     , parser-combinators
     , prettyprinter >=1.7.1 && <1.8
-    , prettyprinter-ansi-terminal
     , text >=2.0 && <2.2
     , trace-tool
   default-language: Haskell2010
