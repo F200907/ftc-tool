@@ -14,6 +14,8 @@ import Data.Trace.Program (MethodDefinition, Program (Program, main, methods), S
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import Util.ParserUtil
+import qualified Data.Map as Map
+import Data.FTC.Contract (Contract)
 
 type SParser = Parser Statement
 
@@ -82,11 +84,18 @@ pSequence = do
 parseStatement :: SParser
 parseStatement = pSequence
 
+parseContract :: Parser Contract
+parseContract = do
+  pre <- brackets parseBooleanExpr
+  post <- brackets parseBooleanExpr
+  return (pre, post)
+
 parseMethodDefinition :: Parser MethodDefinition
 parseMethodDefinition = do
+  contract <- parseContract
   methodName <- identifier <?> "method name"
   methodBody <- braces parseStatement
-  return (methodName, methodBody)
+  return (methodName, contract, methodBody)
 
 parseProgram :: Parser Program
 parseProgram = programParser' (Program {methods = [], main = Nothing})
@@ -110,24 +119,3 @@ parseProgram = programParser' (Program {methods = [], main = Nothing})
 
 _testParse :: IO ()
 _testParse = parseTest parseProgram "even{if x = 0 then y := 1 else x := x - 1; odd()}\n odd{if x = 0 then \n y := 0 \n\t else \n \t x := x - 1; even()} /* this is a test */ x:=3;even()"
-
--- parseProgram :: String -> Text -> Either (Diagnostic Text) Statement
--- parseProgram filename content =
---   let res = runParser parser filename content
---    in case res of
---         Left bundle ->
---           let diag = errorDiagnosticFromBundle Nothing "Parse error on program" Nothing bundle
---               diag' = addFile diag filename (unpack content)
---            in Left diag' -- error $ printDiagnostic stderr WithUnicode (TabSize 4) defaultStyle diag'
---                 -- return Skip
---         Right res' -> Right res'
-
--- parseProgramIO :: String -> Text -> IO ()
--- parseProgramIO filename content =
---   let res = parseProgram filename content in
---     case res of
---       Left diag -> printDiagnostic stderr WithUnicode (TabSize 4) defaultStyle diag
---       Right statement -> print $ pretty statement
-
--- instance HasHints Void Text where
---   hints _ = []

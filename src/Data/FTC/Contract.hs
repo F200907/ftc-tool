@@ -1,5 +1,5 @@
-module Data.FTC.Contract (Contract, Contracts, pre, post, lookupContract, contract) where
-import Data.Expression (BooleanExpr)
+module Data.FTC.Contract (Contract, Contracts, pre, post, lookupContract, contract, trueContract) where
+import Data.Expression (BooleanExpr (BTrue))
 import Data.Text (Text)
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -19,3 +19,6 @@ post (_, c) = c
 
 contract :: BooleanExpr -> BooleanExpr -> Contract
 contract = (,)
+
+trueContract :: Contract
+trueContract = (BTrue, BTrue)

@@ -15,6 +15,7 @@ module Data.Trace.Program
     bigStep,
     rename,
     methodBody,
+    lookupMethod,
     (#),
   )
 where
@@ -26,10 +27,12 @@ import Data.Text (Text)
 import Prettyprinter
 import Prettyprinter.Render.Terminal (AnsiStyle, italicized)
 import Util.PrettyUtil
+import Data.FTC.Contract (Contract, Contracts, trueContract)
+import qualified Data.Map as Map
 
 type MethodName = Text
 
-type MethodDefinition = (MethodName, Statement)
+type MethodDefinition = (MethodName, Contract, Statement)
 
 data Statement
   = Skip
@@ -77,7 +80,7 @@ instance Pretty Program where
   pretty (Program {methods, main}) =
     vsep $
       map
-        ( \(name, statement) ->
+        ( \(name, _b, statement) ->
             pretty name <+> braces (line <> pretty statement <> line) <> line
         )
         methods
@@ -88,20 +91,26 @@ instance {-# OVERLAPS #-} PrettyAnsi Program where
   prettyAnsi (Program {methods, main}) =
     vsep $
       map
-        ( \(name, statement) ->
+        ( \(name, _b, statement) ->
             prettyAnsi name <+> braces (line <> prettyAnsi statement <> line) <> line
         )
         methods
         ++ map prettyAnsi (catMaybes [main])
 
 _testProgram :: Program
-_testProgram = Program {methods = [("down", _testStatement), ("up", _testStatement)], main = Just _testStatement}
+_testProgram = Program {methods = [("down", trueContract, _testStatement), ("up", trueContract, _testStatement)], main = Just _testStatement}
 
 emptyProgram :: Program
 emptyProgram = Program [] Nothing
 
+lookupMethod :: MethodName -> [MethodDefinition] -> Maybe Statement
+lookupMethod m [] = Nothing
+lookupMethod m ((m', _, b) : xs)
+  | m == m' = return b
+  | otherwise = lookupMethod m xs
+
 methodBody :: Program -> MethodName -> Maybe Statement
-methodBody prog m = lookup m (methods prog)
+methodBody prog m = lookupMethod m (methods prog)
 
 smallStep :: Program -> (Maybe Statement, Valuation)
 smallStep program@(Program {main}) = case main of
@@ -116,7 +125,7 @@ smallStep' program@(Program {methods}) v s = case s of
     (Nothing, v') -> (Just s2, v')
     (Just s1', v') -> (Just (Sequence s1' s2), v')
   Condition b s1 s2 -> if evaluate b v then (Just s1, v) else (Just s2, v)
-  Method m -> (lookup m methods, v)
+  Method m -> (lookupMethod m methods, v)
 
 bigStep :: Program -> Valuation
 bigStep program@(Program {main}) = bigStep' program empty main

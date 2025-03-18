@@ -10,7 +10,7 @@ import Data.Expression
 import Data.Maybe (fromMaybe)
 import qualified Data.Set as Set
 import Data.Text (Text, unpack)
-import Data.Trace.Program (Program (Program, main, methods), Statement (Assignment, Condition, Method, Sequence, Skip))
+import Data.Trace.Program (Program (Program, main, methods), Statement (Assignment, Condition, Method, Sequence, Skip), lookupMethod)
 import Prettyprinter
 import Prettyprinter.Render.Terminal
 import Util.PrettyUtil
@@ -76,7 +76,7 @@ strongestTraceFormula' (Program {methods}) = stf Set.empty
     stf methodRVars (Method m)
       | Set.member m methodRVars = Chop (BinaryRelation Id) (RecursiveVariable m)
       | otherwise =
-          let sm = fromMaybe (error $ "could not find method " ++ unpack m) (lookup m methods)
+          let sm = fromMaybe (error $ "could not find method " ++ unpack m) (lookupMethod m methods)
            in Chop (BinaryRelation Id) (Mu m (stf (Set.insert m methodRVars) sm))
 
 instance (Substitutable TraceFormula RecursiveVar TraceFormula) where

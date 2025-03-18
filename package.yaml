@@ -30,6 +30,7 @@ dependencies:
 - containers
 - prettyprinter-ansi-terminal
 - optparse-applicative
+- mtl
 
 ghc-options:
 - -Wall
