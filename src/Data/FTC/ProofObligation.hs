@@ -3,10 +3,10 @@
 
 module Data.FTC.ProofObligation (ProofObligation(..), StateInfo(..)) where
 import Data.Text (Text)
-import Data.FOL.SMTUtil (SMTify (smtify))
+import SMT.SMTUtil (SMTify (smtify))
 import qualified Data.Text as Text
 import Data.List (intersperse, delete)
-import Data.FTC.SMTFormula (SMTFormula)
+import SMT.SMTFormula (SMTFormula)
 newtype StateInfo = StateInfo [Text]
 
 data ProofObligation = ProofObligation {stateInfo :: StateInfo, formula :: [SMTFormula], sideConditions :: [SMTFormula]}

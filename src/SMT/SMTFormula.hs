@@ -1,9 +1,9 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.FTC.SMTFormula (SMTFormula (..), (==>), (&&&), (|||)) where
-import Data.FTC.SMTPredicate
-import Data.FOL.SMTUtil (SMTify (smtify), smtOp, (<+>))
+module SMT.SMTFormula (SMTFormula (..), (==>), (&&&), (|||)) where
+import SMT.SMTPredicate
+import SMT.SMTUtil (SMTify (smtify), smtOp, (<+>))
 import Data.Text (Text)
 
 data SMTFormula

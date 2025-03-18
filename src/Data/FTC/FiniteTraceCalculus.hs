@@ -1,14 +1,13 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 {-# HLINT ignore "Redundant id" #-}
-module Data.FTC.FiniteTraceCalculus (ftc, mc) where
+module Data.FTC.FiniteTraceCalculus (ftc, mc, mc') where
 
 import Data.Expression (BooleanExpr, ArithmeticExpr, VariableName)
-import Data.FTC.SMTFormula (SMTFormula (Not, Predicate), (&&&), (==>))
-import Data.FTC.SMTPredicate (SMTPredicate (AssignmentPredicate, IdentityPredicate, StatePredicate), predicate)
+import SMT.SMTFormula (SMTFormula (Not, Predicate), (&&&), (==>))
+import SMT.SMTPredicate (SMTPredicate (AssignmentPredicate, IdentityPredicate, StatePredicate), predicate)
 import Data.Set (Set)
 import Data.Text (Text)
-import Data.Trace.Program (Statement (Assignment, Condition, Method, Sequence, Skip), (#), lookupMethod, Program (methods), contract, contracts)
 import Data.Trace.TraceLogic (TraceFormula (Chop, Mu, StateFormula))
 import Prelude hiding (id)
 import Data.Maybe (fromMaybe)
@@ -92,7 +91,8 @@ mc cs i (Sequence (Method m) s) phi = (Predicate (StatePredicate i pre) &&& Pred
     (pre, post) = fromMaybe (error "FIXME: no contract found for a procedure") (lookupContract m cs)
 mc cs i (Sequence (Sequence s1 s2) s3) phi = mc cs i (s1 # (s2 # s3)) phi
 
-_mc p m = case lookupMethod m (methods p) of
+mc' :: Program -> Text -> SMTFormula
+mc' p m = case lookupMethod m (methods p) of
   Just s -> case contract m (methods p) of
     Just (_, post) -> mc (contracts p) 1 s post
     _ -> undefined

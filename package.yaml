@@ -26,10 +26,13 @@ dependencies:
 - prettyprinter >= 1.7.1 && < 1.8
 - text >= 2.0 && < 2.2
 - parser-combinators
-- hasmtlib >= 2.8 && < 2.9
+# - hasmtlib >= 2.8 && < 2.9
+- smtlib-backends-process
+- smtlib-backends
 - containers
 - optparse-applicative
 - mtl
+- bytestring
 
 ghc-options:
 - -Wall

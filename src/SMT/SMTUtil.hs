@@ -1,7 +1,7 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.FOL.SMTUtil (StateType (..), genState, SMTify (..), Stateful (..), indexedState, (<+>), smtOp) where
+module SMT.SMTUtil (StateType (..), genState, SMTify (..), Stateful (..), indexedState, (<+>), smtOp) where
 
 import Data.Expression
 import Data.List (delete, intersperse)
