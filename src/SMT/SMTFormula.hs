@@ -2,9 +2,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module SMT.SMTFormula (SMTFormula (..), (==>), (&&&), (|||)) where
-import SMT.SMTPredicate
-import SMT.SMTUtil (SMTify (smtify), smtOp, (<+>))
+
+import Data.Expression (Variables (variables))
+import Data.Set (Set)
+import qualified Data.Set as Set
 import Data.Text (Text)
+import SMT.SMTPredicate
+import SMT.SMTUtil (SMTify (smtify, states), smtOp, (<+>))
 
 data SMTFormula
   = Top
@@ -17,14 +21,17 @@ data SMTFormula
   deriving (Show)
 
 infixr 1 ==>
+
 (==>) :: SMTFormula -> SMTFormula -> SMTFormula
 (==>) a b = a `Implies` b
 
 infixr 2 &&&
+
 (&&&) :: SMTFormula -> SMTFormula -> SMTFormula
 (&&&) a b = a `And` b
 
 infixr 2 |||
+
 (|||) :: SMTFormula -> SMTFormula -> SMTFormula
 (|||) a b = a `Or` b
 
@@ -37,3 +44,22 @@ instance SMTify SMTFormula where
   smtify (And a b) = smtOp ("and" <+> smtify a <+> smtify b)
   smtify (Or a b) = smtOp ("or" <+> smtify a <+> smtify b)
   smtify (Predicate p) = smtify p
+
+  states :: SMTFormula -> Set Int
+  states Top = Set.empty
+  states Bot = Set.empty
+  states (Implies a b) = states a `Set.union` states b
+  states (Not a) = states a
+  states (And a b) = states a `Set.union` states b
+  states (Or a b) = states a `Set.union` states b
+  states (Predicate p) = states p
+
+instance Variables SMTFormula where
+  variables :: SMTFormula -> Set Text
+  variables Top = Set.empty
+  variables Bot = Set.empty
+  variables (Implies a b) = variables a `Set.union` variables b
+  variables (Not a) = variables a
+  variables (And a b) = variables a `Set.union` variables b
+  variables (Or a b) = variables a `Set.union` variables b
+  variables (Predicate p) = variables p

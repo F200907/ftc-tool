@@ -1,8 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Lib
-  ( someFunc,
-    parseBooleanExpr,
+  ( parseBooleanExpr,
     parseArithmeticExpr,
     evaluate,
     substitute,
@@ -23,6 +22,11 @@ module Lib
     strongestTraceFormula',
     parseTraceFormula,
     rename,
+    z3,
+    SMTInstance (..),
+    checkValidity,
+    contractCondition,
+    cvc5,
   )
 where
 
@@ -32,9 +36,7 @@ import Data.Trace.Program
 import Data.Trace.ProgramParser
 import Data.Trace.TraceLogic
 import Data.Trace.TraceLogicParser
-
-someFunc :: IO ()
-someFunc = print (1 :: Integer)
+import SMT
 
 -- someFunc :: IO ()
 -- someFunc = print $ pretty $ runParser parser "if 1 then skip else skip"

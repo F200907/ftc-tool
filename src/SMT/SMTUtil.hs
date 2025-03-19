@@ -1,17 +1,17 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module SMT.SMTUtil (StateType (..), genState, SMTify (..), Stateful (..), indexedState, (<+>), smtOp) where
+module SMT.SMTUtil (genState, SMTify (..), Stateful (..), indexedState, (<+>), smtOp) where
 
-import Data.Expression
+import Data.Expression (ArithmeticExpr (..), BooleanExpr (..))
 import Data.List (delete, intersperse)
+import Data.Set (Set)
+import qualified Data.Set as Set
 import Data.Text (Text, pack)
 import qualified Data.Text as Text
 
-newtype StateType = StateType [Text]
-
-genState :: StateType -> Text
-genState (StateType xs) = declareDatatype <> "\n" <> idPred <> "\n" <> foldl (\acc x -> acc <> sbPred x <> "\n") "" xs
+genState :: [Text] -> Text
+genState xs = declareDatatype <> "\n" <> idPred <> "\n" <> foldl (\acc x -> acc <> sbPred x <> "\n") "" xs
   where
     declareDatatype = "(declare-datatypes ((State 0)) (((mk-state " <> concatWithSpace declareDatatype' <> "))))"
     declareDatatype' = map (\x -> "(" <> x <> " Int)") xs
@@ -53,6 +53,7 @@ smtOp t = "(" <> t <> ")"
 
 class SMTify a where
   smtify :: a -> Text
+  states :: a -> Set Int
 
 instance (SMTify ArithmeticExpr) where
   smtify :: ArithmeticExpr -> Text
@@ -64,7 +65,11 @@ instance (SMTify ArithmeticExpr) where
   smtify (Minus a b) = smtOp ("-" <+> smtify a <+> smtify b)
   smtify (Times a b) = smtOp ("*" <+> smtify a <+> smtify b)
 
+  states :: ArithmeticExpr -> Set Int
+  states = const Set.empty
+
 instance (SMTify BooleanExpr) where
+  smtify :: BooleanExpr -> Text
   smtify BTrue = "true"
   smtify BFalse = "false"
   smtify (Not f) = smtOp ("not" <+> smtify f)
@@ -72,3 +77,6 @@ instance (SMTify BooleanExpr) where
   smtify (Or a b) = smtOp ("or" <+> smtify a <+> smtify b)
   smtify (Equal a b) = smtOp ("=" <+> smtify a <+> smtify b)
   smtify (LessThan a b) = smtOp ("<" <+> smtify a <+> smtify b)
+
+  states :: BooleanExpr -> Set Int
+  states = const Set.empty

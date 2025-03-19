@@ -5,9 +5,6 @@
 
 module Data.Trace.ProgramParser (parseStatement, parseMethodDefinition, parseProgram) where
 
--- import Error.Diagnose (TabSize (TabSize), WithUnicode (WithUnicode), addFile, defaultStyle, printDiagnostic, stderr, Diagnostic, Note)
--- import Error.Diagnose.Compat.Megaparsec (errorDiagnosticFromBundle, hints, HasHints)
-
 import Data.ExpressionParser (parseArithmeticExpr, parseBooleanExpr)
 import Data.Text (Text)
 import Data.Trace.Program (MethodDefinition, Program (Program, main, methods), Statement (Assignment, Condition, Method, Sequence, Skip))

@@ -1,28 +1,29 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module SMT (SMTInstance (..), checkValidity, cvc5, z3) where
+module SMT (SMTInstance (..), checkValidity, cvc5, z3, contractCondition) where
 
-import Control.Monad (foldM_, unless)
+import Control.Monad (unless)
 import Data.ByteString (toStrict)
-import Data.ByteString.Builder (Builder, byteString, toLazyByteString, string8)
-import Data.Expression (ArithmeticExpr (AVar, Plus, Constant), BooleanExpr (Equal))
+import Data.ByteString.Builder (Builder, byteString, string8)
+import qualified Data.Expression as Exp
+import Data.FTC.FiniteTraceCalculus (mc)
+import qualified Data.Set as Set
 import Data.Text (Text, unpack)
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
-import SMT.SMTFormula (SMTFormula (Bot, Predicate, Top))
+import Data.Trace.Program (Program (methods), contract, contracts, lookupMethod)
+import SMT.SMTFormula (SMTFormula (..))
 import SMT.SMTPredicate (SMTPredicate (StatePredicate))
-import SMT.SMTUtil (SMTify (smtify), StateType (StateType), genState, smtOp, (<+>), indexedState)
+import SMT.SMTUtil (SMTify (smtify, states), genState, indexedState, smtOp, (<+>))
 import SMTLIB.Backends (QueuingFlag (NoQueuing), Solver, command, command_, initSolver)
 import SMTLIB.Backends.Process (Config (Config, args, exe, std_err), StdStream (CreatePipe), new, toBackend)
-import Data.FTC.FiniteTraceCalculus (mc')
-import Data.Trace.Program (simpleProg)
-import SMT.SMTFormula (SMTFormula(..))
-import qualified Data.Expression as Exp
-
 
 -- import Data.ByteString.Char8 (toString)
 
-data SMTInstance = SMTInstance {variables :: [Text], conditions :: [SMTFormula], problem :: SMTFormula}
+data SMTInstance = SMTInstance {variables :: [Text], conditions :: [SMTFormula], problem :: SMTFormula} deriving (Show)
+
+invalidInstance :: SMTInstance
+invalidInstance = SMTInstance {variables = [], conditions = [], problem = Bot}
 
 z3 :: Config
 z3 = Config {std_err = CreatePipe, exe = "z3", args = ["-in"]}
@@ -49,19 +50,30 @@ checkValidity cfg (SMTInstance {variables, conditions, problem}) = do
   process <- new cfg
   solver <- initSolver NoQueuing (toBackend process)
   setupSolver solver
-  let info = unpack $ genState (StateType variables)
+  let info = unpack $ genState variables
   mapM_ (command_ solver . string8) (lines info)
-  mapM_ (declareState solver) [1..5]
+  let states' = foldl (\acc c -> states c `Set.union` acc) (states problem) conditions
+  mapM_ (declareState solver) (Set.toList states')
   mapM_ (assert solver) conditions
   let p = smtOp ("assert" <+> smtOp ("not" <+> smtify problem))
   command_ solver $ text2Builder p
   s <- command solver "(check-sat)"
   let valid = decodeUtf8 (toStrict s) == "unsat"
-  unless valid (do
-    model <- command solver "(get-model)"
-    print model)
+  unless
+    valid
+    ( do
+        model <- command solver "(get-model)"
+        print model
+    )
   return valid
---   return $ sat == "unsat"
 
-testInstance = SMTInstance {variables = ["x"], conditions = [Predicate (StatePredicate 1 (Exp.Not (Exp.LessThan (AVar "x") (Constant 0))))], problem = mc' simpleProg "m"}
+contractCondition :: Program -> Text -> SMTInstance
+contractCondition p m = case lookupMethod m (methods p) of
+  Just s -> case contract m (methods p) of
+    Just (pre, post) ->
+      let problem = mc (contracts p) 1 s post
+       in SMTInstance {variables = Set.toList (Exp.variables problem), conditions = [Predicate (StatePredicate 1 pre)], problem = problem}
+    _ -> invalidInstance
+  _ -> invalidInstance
 
+-- testInstance = SMTInstance {variables = ["x"], conditions = [Predicate (StatePredicate 1 (Exp.Not (Exp.LessThan (AVar "x") (Constant 0))))], problem = mc' simpleProg "m"}

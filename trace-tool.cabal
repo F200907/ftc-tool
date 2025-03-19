@@ -30,7 +30,6 @@ library
       Data.FTC.Admissibility
       Data.FTC.Contract
       Data.FTC.FiniteTraceCalculus
-      Data.FTC.ProofObligation
       Data.Trace.CanonicalProgram
       Data.Trace.Program
       Data.Trace.ProgramParser
