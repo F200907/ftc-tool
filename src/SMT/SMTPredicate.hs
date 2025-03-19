@@ -9,6 +9,9 @@ import qualified Data.Set as Set
 import Data.Text (Text)
 import Data.Trace.TraceLogic (BinaryRelation (Id, Sb), TraceFormula (BinaryRelation, Chop, Conjunction, Disjunction, Mu, RecursiveVariable, StateFormula), unfold)
 import SMT.SMTUtil (SMTify (..), Stateful (stateful), indexedState, smtOp, (<+>))
+import Prettyprinter hiding ((<+>))
+import qualified Prettyprinter as P
+import Util.PrettyUtil (lor, land)
 
 data SMTPredicate
   = StatePredicate Int BooleanExpr
@@ -18,6 +21,15 @@ data SMTPredicate
   | DisjunctionPredicate SMTPredicate SMTPredicate
   | BotPredicate
   deriving (Show)
+
+instance Pretty SMTPredicate where
+  pretty :: SMTPredicate -> Doc ann
+  pretty (StatePredicate i b) = pretty b <> parens (pretty i <> "," P.<+> pretty (i + 1))
+  pretty (IdentityPredicate i) = "Id" <> parens (pretty i <> "," P.<+> pretty (i + 1))
+  pretty (AssignmentPredicate i x a) = "Sb_" <> pretty x <> "^" <> pretty a <> parens (pretty i <> "," P.<+> pretty (i + 1))
+  pretty (ConjunctionPredicate a b) = parens (pretty a P.<+> land P.<+> pretty b)
+  pretty (DisjunctionPredicate a b) = parens (pretty a P.<+> lor P.<+> pretty b)
+  pretty BotPredicate = "false" 
 
 predicate :: Int -> TraceFormula -> SMTPredicate
 predicate i (StateFormula s) = StatePredicate i s

@@ -37,6 +37,7 @@ library
       Data.Trace.TraceLogicParser
       Lib
       SMT
+      SMT.ModelParser
       SMT.SMTFormula
       SMT.SMTPredicate
       SMT.SMTUtil

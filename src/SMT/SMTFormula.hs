@@ -9,6 +9,9 @@ import qualified Data.Set as Set
 import Data.Text (Text)
 import SMT.SMTPredicate
 import SMT.SMTUtil (SMTify (smtify, states), smtOp, (<+>))
+import Prettyprinter hiding ((<+>))
+import qualified Prettyprinter as P
+import Util.PrettyUtil (top, bot, implies, lor, land, lnot)
 
 data SMTFormula
   = Top
@@ -19,6 +22,16 @@ data SMTFormula
   | Or SMTFormula SMTFormula
   | Predicate SMTPredicate
   deriving (Show)
+
+instance Pretty SMTFormula where
+  pretty :: SMTFormula -> Doc ann
+  pretty Top = top
+  pretty Bot = bot
+  pretty (Implies a b) = parens $ pretty a P.<+> implies P.<+> pretty b
+  pretty (Not a) = lnot <> pretty a 
+  pretty (And a b) = parens $ pretty a P.<+> land P.<+> pretty b
+  pretty (Or a b) = parens $ pretty a P.<+> lor P.<+> pretty b
+  pretty (Predicate p) = parens $ pretty p
 
 infixr 1 ==>
 

@@ -27,6 +27,7 @@ module Lib
     checkValidity,
     contractCondition,
     cvc5,
+    parseModel
   )
 where
 
@@ -37,6 +38,7 @@ import Data.Trace.ProgramParser
 import Data.Trace.TraceLogic
 import Data.Trace.TraceLogicParser
 import SMT
+import SMT.ModelParser
 
 -- someFunc :: IO ()
 -- someFunc = print $ pretty $ runParser parser "if 1 then skip else skip"

@@ -4,7 +4,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Util.PrettyUtil (lor, land, arc, mu, lnot, top, bot, tryToSuperscript, tryToSubscript, implies, forAll, exists) where
+module Util.PrettyUtil (lor, land, arc, mu, lnot, top, bot, tryToSuperscript, tryToSubscript, implies, forAll, exists, mapsTo) where
 
 import Data.Map.Strict (Map, fromList)
 import qualified Data.Map.Strict as Map
@@ -42,6 +42,9 @@ forAll = "∀"
 
 exists :: Doc ann
 exists = "∃"
+
+mapsTo :: Doc ann
+mapsTo = "↦"
 
 instance (Pretty a, Pretty b) => Pretty (Map a b) where
   pretty :: Map a b -> Doc ann

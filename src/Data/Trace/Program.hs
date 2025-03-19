@@ -73,7 +73,9 @@ instance Pretty Program where
   pretty (Program {methods, main}) =
     vsep $
       map
-        ( \(name, _b, statement) ->
+        ( \(name, (pre, post), statement) ->
+            brackets (pretty pre) <> line <>
+            brackets (pretty post) <> line <>
             pretty name <+> braces (line <> pretty statement <> line) <> line
         )
         methods
