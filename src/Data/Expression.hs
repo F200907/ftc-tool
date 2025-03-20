@@ -3,10 +3,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
-module Data.Expression (VariableName, ArithmeticExpr (..), BooleanExpr (..), Valuation, Renameable (..), Substitutable (..), Evaluable (..), Variables(..)) where
+module Data.Expression (VariableName, ArithmeticExpr (..), BooleanExpr (..), Valuation, Renameable (..), Substitutable (..), Evaluable (..), Variables (..)) where
 
 import Data.Map.Strict (Map, lookup)
 import Data.Maybe (fromMaybe)
+import Data.Set (Set)
+import qualified Data.Set as Set
 import Data.Text (Text, unpack)
 import Prettyprinter
   ( Doc,
@@ -16,8 +18,6 @@ import Prettyprinter
   )
 import Util.PrettyUtil
 import Prelude hiding (lookup)
-import Data.Set (Set)
-import qualified Data.Set as Set
 
 type VariableName = Text
 
@@ -87,7 +87,7 @@ instance (Variables BooleanExpr) where
   variables :: BooleanExpr -> Set Text
   variables BTrue = Set.empty
   variables BFalse = Set.empty
-  variables (Not a) = variables a 
+  variables (Not a) = variables a
   variables (And a b) = variables a `Set.union` variables b
   variables (Or a b) = variables a `Set.union` variables b
   variables (Equal a b) = variables a `Set.union` variables b

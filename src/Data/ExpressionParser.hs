@@ -107,9 +107,13 @@ impliesToken :: Text
 impliesToken = "=>"
 
 pLVariable :: AParser
-pLVariable = LVar' <$> lexeme (do
-  _ <- symbol "#"
-  identifier)
+pLVariable =
+  LVar'
+    <$> lexeme
+      ( do
+          _ <- symbol "#"
+          identifier
+      )
 
 pAVariable :: AParser
 pAVariable = AVar' <$> lexeme identifier
@@ -179,8 +183,9 @@ booleanOperatorTable :: [[Operator Parser BExpr]]
 booleanOperatorTable =
   [ [prefix notToken BNot'],
     [ binary andToken BAnd',
-      binary orToken BOr'],
-      [binary impliesToken BImplies']
+      binary orToken BOr'
+    ],
+    [binary impliesToken BImplies']
   ]
 
 pBExp :: BParser

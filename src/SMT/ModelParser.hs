@@ -28,12 +28,15 @@ stateSymbol :: Text
 stateSymbol = "state"
 
 parseValue :: Parser Int
-parseValue = choice [ try (
-  do
-    v <- parens (lexeme $ symbol "-" >> integer)
-    return (-v)),
-    integer
-  ]
+parseValue =
+  choice
+    [ try
+        ( do
+            v <- parens (lexeme $ symbol "-" >> integer)
+            return (-v)
+        ),
+      integer
+    ]
 
 parseState :: [Text] -> Parser (Int, State)
 parseState vars = do

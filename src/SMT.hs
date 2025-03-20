@@ -22,9 +22,9 @@ import SMT.SMTPredicate (SMTPredicate (StatePredicate))
 import SMT.SMTUtil (SMTify (smtify, states), genState, indexedState, smtOp, (<+>))
 import SMTLIB.Backends (QueuingFlag (NoQueuing), Solver, command, command_, initSolver)
 import SMTLIB.Backends.Process (Config (args, exe, std_err), StdStream (CreatePipe), new, toBackend)
+import qualified SMTLIB.Backends.Process as SMTLIB
 import Text.Megaparsec (parse)
 import Util.PrettyUtil (mapsTo)
-import qualified SMTLIB.Backends.Process as SMTLIB
 
 -- import Data.ByteString.Char8 (toString)
 
@@ -58,15 +58,18 @@ text2Builder :: Text -> Builder
 text2Builder = byteString . encodeUtf8
 
 assert :: SMT.Config -> Solver -> SMTFormula -> IO ()
-assert cfg solver formula = let cmd = smtOp ("assert" <+> smtify formula) in do
-    command_ solver $ text2Builder cmd
-    printDebug' cfg cmd
+assert cfg solver formula =
+  let cmd = smtOp ("assert" <+> smtify formula)
+   in do
+        command_ solver $ text2Builder cmd
+        printDebug' cfg cmd
 
 declareState :: SMT.Config -> Solver -> Int -> IO ()
-declareState cfg solver idx = let cmd = smtOp ("declare-const" <+> indexedState idx <+> "State") in
-  do
-    command_ solver $ text2Builder cmd
-    printDebug' cfg cmd
+declareState cfg solver idx =
+  let cmd = smtOp ("declare-const" <+> indexedState idx <+> "State")
+   in do
+        command_ solver $ text2Builder cmd
+        printDebug' cfg cmd
 
 setupSolver :: SMT.Config -> Solver -> IO ()
 setupSolver cfg solver = do
@@ -123,4 +126,5 @@ printDebug (Config _ True) s = putStrLn s
 
 printDebug' :: SMT.Config -> Text -> IO ()
 printDebug' cfg t = printDebug cfg (unpack t)
+
 -- testInstance = SMTInstance {variables = ["x"], conditions = [Predicate (StatePredicate 1 (Exp.Not (Exp.LessThan (AVar "x") (Constant 0))))], problem = mc' simpleProg "m"}

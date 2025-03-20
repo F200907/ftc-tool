@@ -7,11 +7,11 @@ import Data.Expression (Variables (variables))
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Text (Text)
-import SMT.SMTPredicate
-import SMT.SMTUtil (SMTify (smtify, states), smtOp, (<+>))
 import Prettyprinter hiding ((<+>))
 import qualified Prettyprinter as P
-import Util.PrettyUtil (top, bot, implies, lor, land, lnot)
+import SMT.SMTPredicate
+import SMT.SMTUtil (SMTify (smtify, states), smtOp, (<+>))
+import Util.PrettyUtil (bot, implies, land, lnot, lor, top)
 
 data SMTFormula
   = Top
@@ -28,7 +28,7 @@ instance Pretty SMTFormula where
   pretty Top = top
   pretty Bot = bot
   pretty (Implies a b) = parens $ pretty a P.<+> implies P.<+> pretty b
-  pretty (Not a) = lnot <> pretty a 
+  pretty (Not a) = lnot <> pretty a
   pretty (And a b) = parens $ pretty a P.<+> land P.<+> pretty b
   pretty (Or a b) = parens $ pretty a P.<+> lor P.<+> pretty b
   pretty (Predicate p) = parens $ pretty p

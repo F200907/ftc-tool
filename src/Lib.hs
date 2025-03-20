@@ -28,7 +28,7 @@ module Lib
     cvc5,
     parseModel,
     initialState,
-    withDebug
+    withDebug,
   )
 where
 
@@ -40,6 +40,3 @@ import Data.Trace.TraceLogic
 import Data.Trace.TraceLogicParser
 import SMT
 import SMT.ModelParser
-
--- someFunc :: IO ()
--- someFunc = print $ pretty $ runParser parser "if 1 then skip else skip"

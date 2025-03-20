@@ -11,7 +11,7 @@ import Data.Text (Text)
 import Data.Trace.Program
 import Data.Trace.TraceLogic (TraceFormula (Chop, StateFormula))
 import SMT.SMTFormula (SMTFormula (Not, Predicate), (&&&), (==>))
-import SMT.SMTPredicate (SMTPredicate (AssignmentPredicate, IdentityPredicate, StatePredicate, BinaryPredicate), predicate)
+import SMT.SMTPredicate (SMTPredicate (AssignmentPredicate, BinaryPredicate, IdentityPredicate, StatePredicate), predicate)
 import Prelude hiding (id)
 
 id :: Int -> SMTFormula

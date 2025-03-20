@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE UndecidableInstances #-}
+
 module Main (Main.main) where
 
 import Data.Char (toLower)
@@ -71,7 +72,7 @@ argHumanRedable =
 
 argDebug :: Parser Bool
 argDebug =
-    switch
+  switch
     ( long "debug"
         <> short 'd'
         <> showDefault
@@ -137,12 +138,12 @@ verify a = do
     putStr' x = putStr (show' x)
 
 class ToString a where
-    toString :: a -> String
+  toString :: a -> String
 
 instance {-# OVERLAPPABLE #-} ToString String where
-    toString :: String -> String
-    toString = id
+  toString :: String -> String
+  toString = id
 
-instance {-# OVERLAPPABLE #-} Show a => ToString a where
-    toString :: a -> String
-    toString = show
+instance {-# OVERLAPPABLE #-} (Show a) => ToString a where
+  toString :: a -> String
+  toString = show

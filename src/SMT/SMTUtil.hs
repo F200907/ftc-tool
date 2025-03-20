@@ -23,8 +23,6 @@ genState xs = declareDatatype <> "\n" <> idPred <> "\n" <> foldl (\acc x -> acc 
 indexedState :: Int -> Text
 indexedState i = "state" <> pack (show i)
 
-
-
 (<+>) :: Text -> Text -> Text
 (<+>) a b = a <> " " <> b
 
