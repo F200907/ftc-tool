@@ -1,7 +1,7 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module SMT.SMTUtil (genState, SMTify (..), Stateful (..), indexedState, (<+>), smtOp) where
+module SMT.SMTUtil (genState, SMTify (..), indexedState, (<+>), smtOp) where
 
 import Data.Expression (ArithmeticExpr (..), BooleanExpr (..))
 import Data.List (delete, intersperse)
@@ -23,27 +23,7 @@ genState xs = declareDatatype <> "\n" <> idPred <> "\n" <> foldl (\acc x -> acc 
 indexedState :: Int -> Text
 indexedState i = "state" <> pack (show i)
 
-class Stateful a where
-  stateful :: a -> Int -> a
 
-instance (Stateful ArithmeticExpr) where
-  stateful :: ArithmeticExpr -> Int -> ArithmeticExpr
-  stateful (Constant c) _ = Constant c
-  stateful (AVar x) i = AVar $ smtOp (x <+> indexedState i)
-  stateful (LVar x) i = LVar $ smtOp (x <+> indexedState (i - 1))
-  stateful (Negation a) i = Negation (stateful a i)
-  stateful (Plus a b) i = Plus (stateful a i) (stateful b i)
-  stateful (Minus a b) i = Minus (stateful a i) (stateful b i)
-  stateful (Times a b) i = Times (stateful a i) (stateful b i)
-
-instance (Stateful BooleanExpr) where
-  stateful :: BooleanExpr -> Int -> BooleanExpr
-  stateful (Not b) i = Not (stateful b i)
-  stateful (And a b) i = And (stateful a i) (stateful b i)
-  stateful (Or a b) i = Or (stateful a i) (stateful b i)
-  stateful (Equal a b) i = Equal (stateful a i) (stateful b i)
-  stateful (LessThan a b) i = LessThan (stateful a i) (stateful b i)
-  stateful b _ = b
 
 (<+>) :: Text -> Text -> Text
 (<+>) a b = a <> " " <> b

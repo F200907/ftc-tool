@@ -1,14 +1,14 @@
--- {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE InstanceSigs #-}
 module Main (Main.main) where
 
-import Control.Monad (foldM_)
 import Data.Char (toLower)
 import Data.Text (pack, unpack)
 import Lib
 import Options.Applicative
 import qualified Prettyprinter as P
 import Text.Megaparsec (parse)
-import Lib (withDebug)
 
 data Mode = Verify | Parse | STF deriving (Show)
 
@@ -132,6 +132,17 @@ verify a = do
         (methods p)
   return ()
   where
-    show' x = if pretty a then (show . P.pretty) x else show x
+    show' x = if pretty a then (show . P.pretty) x else toString x
     putStrLn' x = putStrLn (show' x)
     putStr' x = putStr (show' x)
+
+class ToString a where
+    toString :: a -> String
+
+instance {-# OVERLAPPABLE #-} ToString String where
+    toString :: String -> String
+    toString = id
+
+instance {-# OVERLAPPABLE #-} Show a => ToString a where
+    toString :: a -> String
+    toString = show

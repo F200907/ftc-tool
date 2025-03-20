@@ -11,7 +11,7 @@ import Data.Text (Text)
 import Data.Trace.Program
 import Data.Trace.TraceLogic (TraceFormula (Chop, StateFormula))
 import SMT.SMTFormula (SMTFormula (Not, Predicate), (&&&), (==>))
-import SMT.SMTPredicate (SMTPredicate (AssignmentPredicate, IdentityPredicate, StatePredicate), predicate)
+import SMT.SMTPredicate (SMTPredicate (AssignmentPredicate, IdentityPredicate, StatePredicate, BinaryPredicate), predicate)
 import Prelude hiding (id)
 
 id :: Int -> SMTFormula
@@ -64,27 +64,30 @@ ftc i (Sequence (Condition b s1 s2) s) (Chop phi psi) xs =
 ftc _ _ _ _ = undefined
 
 mc :: Contracts -> Int -> Statement -> BooleanExpr -> SMTFormula
-mc _ i (Assignment x a) phi = sb i x a ==> Predicate (StatePredicate (i + 1) phi)
-mc _ i Skip phi = id i ==> Predicate (StatePredicate (i + 1) phi)
--- if b then s1 else s2
-mc cs i (Condition b s1 s2) phi =
-  id i
-    ==> (bPred ==> mc cs (i + 1) s1 phi)
-    &&& (Not bPred ==> mc cs (i + 1) s2 phi)
+mc cs' i' s' phi' = mc' cs' i' s' phi'
   where
-    bPred = Predicate (predicate i (StateFormula b))
-mc cs i (Method m) phi = (Predicate (StatePredicate i pre) &&& Predicate (StatePredicate (i + 1) post)) ==> Predicate (StatePredicate (i + 1) phi)
-  where
-    (pre, post) = fromMaybe (error "FIXME: no contract found for a procedure") (lookupContract m cs)
-mc cs i (Sequence (Assignment x a) s) phi = sb i x a ==> mc cs (i + 1) s phi
-mc cs i (Sequence Skip s) phi = id i ==> mc cs (i + 1) s phi
-mc cs i (Sequence (Condition b s1 s2) s) phi =
-  id i
-    ==> (bPred ==> mc cs (i + 1) (s1 # s) phi)
-    &&& (Not bPred ==> mc cs (i + 1) (s2 # s) phi)
-  where
-    bPred = Predicate (predicate i (StateFormula b))
-mc cs i (Sequence (Method m) s) phi = (Predicate (StatePredicate i pre) &&& Predicate (StatePredicate (i + 1) post)) ==> mc cs (i + 1) s phi
-  where
-    (pre, post) = fromMaybe (error "FIXME: no contract found for a procedure") (lookupContract m cs)
-mc cs i (Sequence (Sequence s1 s2) s3) phi = mc cs i (s1 # (s2 # s3)) phi
+    postM = Predicate $ BinaryPredicate 1 (i' + 1) phi'
+    mc' _ i (Assignment x a) _ = sb i x a ==> postM
+    mc' _ i Skip _ = id i ==> postM
+    -- if b then s1 else s2
+    mc' cs i (Condition b s1 s2) phi =
+      id i
+        ==> (bPred ==> mc cs (i + 1) s1 phi)
+        &&& (Not bPred ==> mc cs (i + 1) s2 phi)
+      where
+        bPred = Predicate (predicate i (StateFormula b))
+    mc' cs i (Method m) _ = (Predicate (StatePredicate i pre) &&& Predicate (StatePredicate (i + 1) post)) ==> postM
+      where
+        (pre, post) = fromMaybe (error "FIXME: no contract found for a procedure") (lookupContract m cs)
+    mc' cs i (Sequence (Assignment x a) s) phi = sb i x a ==> mc cs (i + 1) s phi
+    mc' cs i (Sequence Skip s) phi = id i ==> mc cs (i + 1) s phi
+    mc' cs i (Sequence (Condition b s1 s2) s) phi =
+      id i
+        ==> (bPred ==> mc cs (i + 1) (s1 # s) phi)
+        &&& (Not bPred ==> mc cs (i + 1) (s2 # s) phi)
+      where
+        bPred = Predicate (predicate i (StateFormula b))
+    mc' cs i (Sequence (Method m) s) phi = (Predicate (StatePredicate i pre) &&& Predicate (StatePredicate (i + 1) post)) ==> mc cs (i + 1) s phi
+      where
+        (pre, post) = fromMaybe (error "FIXME: no contract found for a procedure") (lookupContract m cs)
+    mc' cs i (Sequence (Sequence s1 s2) s3) phi = mc cs i (s1 # (s2 # s3)) phi
