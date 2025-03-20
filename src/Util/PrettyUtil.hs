@@ -48,7 +48,7 @@ mapsTo = "↦"
 
 instance (Pretty a, Pretty b) => Pretty (Map a b) where
   pretty :: Map a b -> Doc ann
-  pretty m = encloseSep "{" "}" "," $ map (\(k, v) -> pretty k <+> "->" <+> pretty v) (Map.toList m)
+  pretty m = encloseSep "{" "}" "," $ map (\(k, v) -> pretty k <+> mapsTo <+> pretty v) (Map.toList m)
 
 instance (Pretty a) => Pretty (Set a) where
   pretty :: Set a -> Doc ann

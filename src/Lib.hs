@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Lib
   ( parseBooleanExpr,
     parseArithmeticExpr,
@@ -13,6 +11,7 @@ module Lib
     smallStep,
     smallStep',
     bigStep,
+    methodBody,
     bigStep',
     parseStatement,
     parseMethodDefinition,
@@ -27,7 +26,9 @@ module Lib
     checkValidity,
     contractCondition,
     cvc5,
-    parseModel
+    parseModel,
+    initialState,
+    withDebug
   )
 where
 

@@ -90,7 +90,7 @@ parseContract = choice [try (do
 parseMethodDefinition :: Parser MethodDefinition
 parseMethodDefinition = do
   contract <- parseContract
-  methodName <- identifier <?> "method name"
+  methodName <- lexeme identifier <?> "method name"
   methodBody <- braces parseStatement
   return (methodName, contract, methodBody)
 

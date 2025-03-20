@@ -2,9 +2,8 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module SMT (SMTInstance (..), checkValidity, cvc5, z3, contractCondition, Validity (..)) where
+module SMT (SMTInstance (..), checkValidity, cvc5, z3, contractCondition, Validity (..), initialState, withDebug) where
 
-import Control.Monad (unless)
 import Data.ByteString (toStrict)
 import Data.ByteString.Builder (Builder, byteString, string8)
 import qualified Data.Expression as Exp
@@ -22,9 +21,10 @@ import SMT.SMTFormula (SMTFormula (..))
 import SMT.SMTPredicate (SMTPredicate (StatePredicate))
 import SMT.SMTUtil (SMTify (smtify, states), genState, indexedState, smtOp, (<+>))
 import SMTLIB.Backends (QueuingFlag (NoQueuing), Solver, command, command_, initSolver)
-import SMTLIB.Backends.Process (Config (Config, args, exe, std_err), StdStream (CreatePipe), new, toBackend)
+import SMTLIB.Backends.Process (Config (args, exe, std_err), StdStream (CreatePipe), new, toBackend)
 import Text.Megaparsec (parse)
 import Util.PrettyUtil (mapsTo)
+import qualified SMTLIB.Backends.Process as SMTLIB
 
 -- import Data.ByteString.Char8 (toString)
 
@@ -43,37 +43,50 @@ instance (Pretty Validity) where
 invalidInstance :: SMTInstance
 invalidInstance = SMTInstance {variables = [], conditions = [], problem = Bot}
 
-z3 :: Config
-z3 = Config {std_err = CreatePipe, exe = "z3", args = ["-in"]}
+data Config = Config SMTLIB.Config Bool
 
-cvc5 :: Config
-cvc5 = Config {std_err = CreatePipe, exe = "cvc5", args = []}
+withDebug :: SMT.Config -> Bool -> SMT.Config
+withDebug (Config cfg _) = Config cfg
+
+z3 :: SMT.Config
+z3 = Config (SMTLIB.Config {std_err = CreatePipe, exe = "z3", args = ["-in"]}) False
+
+cvc5 :: SMT.Config
+cvc5 = Config (SMTLIB.Config {std_err = CreatePipe, exe = "cvc5", args = []}) False
 
 text2Builder :: Text -> Builder
 text2Builder = byteString . encodeUtf8
 
-assert :: Solver -> SMTFormula -> IO ()
-assert solver formula = command_ solver $ text2Builder $ smtOp ("assert" <+> smtify formula)
+assert :: SMT.Config -> Solver -> SMTFormula -> IO ()
+assert cfg solver formula = let cmd = smtOp ("assert" <+> smtify formula) in do
+    command_ solver $ text2Builder cmd
+    printDebug' cfg cmd
 
-declareState :: Solver -> Int -> IO ()
-declareState solver idx = command_ solver $ text2Builder $ smtOp ("declare-const" <+> indexedState idx <+> "State")
+declareState :: SMT.Config -> Solver -> Int -> IO ()
+declareState cfg solver idx = let cmd = smtOp ("declare-const" <+> indexedState idx <+> "State") in
+  do
+    command_ solver $ text2Builder cmd
+    printDebug' cfg cmd
 
-setupSolver :: Solver -> IO ()
-setupSolver solver = do
+setupSolver :: SMT.Config -> Solver -> IO ()
+setupSolver cfg solver = do
   command_ solver "(set-logic ALL)"
   command_ solver "(set-option :produce-unsat-cores true) ; enable generation of unsat cores"
+  printDebug cfg "(set-logic ALL)\n(set-option :produce-unsat-cores true) ; enable generation of unsat cores"
 
-checkValidity :: Config -> SMTInstance -> IO Validity
-checkValidity cfg (SMTInstance {variables, conditions, problem}) = do
-  process <- new cfg
+checkValidity :: SMT.Config -> SMTInstance -> IO Validity
+checkValidity cfg@(Config libCfg _) (SMTInstance {variables, conditions, problem}) = do
+  process <- new libCfg
   solver <- initSolver NoQueuing (toBackend process)
-  setupSolver solver
+  setupSolver cfg solver
   let info = unpack $ genState variables
   mapM_ (command_ solver . string8) (lines info)
+  printDebug cfg info
   let states' = foldl (\acc c -> states c `Set.union` acc) (states problem) conditions
-  mapM_ (declareState solver) (Set.toList states')
-  mapM_ (assert solver) conditions
+  mapM_ (declareState cfg solver) (Set.toList states')
+  mapM_ (assert cfg solver) conditions
   let p = smtOp ("assert" <+> smtOp ("not" <+> smtify problem))
+  printDebug' cfg p
   command_ solver $ text2Builder p
   s <- command solver "(check-sat)"
   let valid = decodeUtf8 (toStrict s) == "unsat"
@@ -100,4 +113,14 @@ counterexample vars raw = case parse (parseModel vars) "SMT-solver" raw of
   Left err -> error (show err)
   Right model -> Map.toAscList model
 
+initialState :: Validity -> Maybe (Map Text Int)
+initialState Valid = Nothing
+initialState (Counterexample states') = (return . snd . head) states'
+
+printDebug :: SMT.Config -> String -> IO ()
+printDebug (Config _ False) _ = return ()
+printDebug (Config _ True) s = putStrLn s
+
+printDebug' :: SMT.Config -> Text -> IO ()
+printDebug' cfg t = printDebug cfg (unpack t)
 -- testInstance = SMTInstance {variables = ["x"], conditions = [Predicate (StatePredicate 1 (Exp.Not (Exp.LessThan (AVar "x") (Constant 0))))], problem = mc' simpleProg "m"}
