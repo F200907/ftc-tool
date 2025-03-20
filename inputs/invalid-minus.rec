@@ -1,9 +1,9 @@
-[x >= 0]
+[x > 0]
 [x = 0]
 m{
     if x > 0 then
         x := x - 1;
-        m()
+        m() /*pre condition is not satisfied here*/
     else
         skip
 }

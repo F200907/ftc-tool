@@ -38,7 +38,8 @@ instance (SMTify ArithmeticExpr) where
   smtify (Constant c) = pack (show c)
   smtify (AVar x) = x
   smtify (LVar x) = x
-  smtify (Negation a) = "-" <> smtify a
+  smtify (Negation c@(Constant _)) = "-" <> smtify c
+  smtify (Negation a) = smtOp ("-" <> smtify a)
   smtify (Plus a b) = smtOp ("+" <+> smtify a <+> smtify b)
   smtify (Minus a b) = smtOp ("-" <+> smtify a <+> smtify b)
   smtify (Times a b) = smtOp ("*" <+> smtify a <+> smtify b)

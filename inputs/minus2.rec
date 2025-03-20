@@ -1,0 +1,21 @@
+[x >= 0]
+[x = 0]
+m{
+    if x > 0 then
+        (x := x - 1; m())
+    else
+        skip}
+
+[true]
+[x = 1]
+n {
+    if x < 0 then
+        x := (-x);
+        m();
+        x := x + 1
+    else
+        m();
+        x := 1
+}
+
+m()

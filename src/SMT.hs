@@ -61,21 +61,21 @@ assert :: SMT.Config -> Solver -> SMTFormula -> IO ()
 assert cfg solver formula =
   let cmd = smtOp ("assert" <+> smtify formula)
    in do
-        command_ solver $ text2Builder cmd
         printDebug' cfg cmd
+        command_ solver $ text2Builder cmd
 
 declareState :: SMT.Config -> Solver -> Int -> IO ()
 declareState cfg solver idx =
   let cmd = smtOp ("declare-const" <+> indexedState idx <+> "State")
    in do
-        command_ solver $ text2Builder cmd
         printDebug' cfg cmd
+        command_ solver $ text2Builder cmd
 
 setupSolver :: SMT.Config -> Solver -> IO ()
 setupSolver cfg solver = do
+  printDebug cfg "(set-logic ALL)\n(set-option :produce-unsat-cores true) ; enable generation of unsat cores"
   command_ solver "(set-logic ALL)"
   command_ solver "(set-option :produce-unsat-cores true) ; enable generation of unsat cores"
-  printDebug cfg "(set-logic ALL)\n(set-option :produce-unsat-cores true) ; enable generation of unsat cores"
 
 checkValidity :: SMT.Config -> SMTInstance -> IO Validity
 checkValidity cfg@(Config libCfg _) (SMTInstance {variables, conditions, problem}) = do
@@ -83,8 +83,8 @@ checkValidity cfg@(Config libCfg _) (SMTInstance {variables, conditions, problem
   solver <- initSolver NoQueuing (toBackend process)
   setupSolver cfg solver
   let info = unpack $ genState variables
-  mapM_ (command_ solver . string8) (lines info)
   printDebug cfg info
+  mapM_ (command_ solver . string8) (lines info)
   let states' = foldl (\acc c -> states c `Set.union` acc) (states problem) conditions
   mapM_ (declareState cfg solver) (Set.toList states')
   mapM_ (assert cfg solver) conditions

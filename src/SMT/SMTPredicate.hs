@@ -4,15 +4,15 @@
 module SMT.SMTPredicate (SMTPredicate (..), predicate) where
 
 import Data.Expression (ArithmeticExpr, BooleanExpr, VariableName, Variables (variables))
+import qualified Data.Expression as Exp
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Text (Text)
 import Data.Trace.TraceLogic (BinaryRelation (Id, Sb), TraceFormula (BinaryRelation, Chop, Conjunction, Disjunction, Mu, RecursiveVariable, StateFormula), unfold)
-import SMT.SMTUtil (SMTify (..), indexedState, smtOp, (<+>))
 import Prettyprinter hiding ((<+>))
 import qualified Prettyprinter as P
-import Util.PrettyUtil (lor, land)
-import qualified Data.Expression as Exp
+import SMT.SMTUtil (SMTify (..), indexedState, smtOp, (<+>))
+import Util.PrettyUtil (land, lor)
 
 data SMTPredicate
   = StatePredicate Int BooleanExpr
@@ -32,7 +32,7 @@ instance Pretty SMTPredicate where
   pretty (AssignmentPredicate i x a) = "Sb_" <> pretty x <> "^" <> pretty a <> parens (pretty i <> "," P.<+> pretty (i + 1))
   pretty (ConjunctionPredicate a b) = parens (pretty a P.<+> land P.<+> pretty b)
   pretty (DisjunctionPredicate a b) = parens (pretty a P.<+> lor P.<+> pretty b)
-  pretty BotPredicate = "false" 
+  pretty BotPredicate = "false"
 
 predicate :: Int -> TraceFormula -> SMTPredicate
 predicate i (StateFormula s) = StatePredicate i s
@@ -48,14 +48,14 @@ predicate i m@(Mu _ _) = predicate i (unfold m)
 instance SMTify SMTPredicate where
   smtify :: SMTPredicate -> Text
   smtify (StatePredicate i b) = smtify $ stateful b i i
-  smtify (BinaryPredicate i j b) = smtify $ stateful b i j 
+  smtify (BinaryPredicate i j b) = smtify $ stateful b i j
   smtify (IdentityPredicate i) = smtOp ("id" <+> indexedState i <+> indexedState (i + 1))
   smtify (AssignmentPredicate i x a) = smtOp ("sb_" <> x <+> indexedState i <+> indexedState (i + 1) <+> smtify (stateful a i i))
   smtify (ConjunctionPredicate a b) = smtOp ("and" <+> smtify a <+> smtify b)
   smtify (DisjunctionPredicate a b) = smtOp ("or" <+> smtify a <+> smtify b)
   smtify BotPredicate = "false"
 
--- Overestimates the states that could be reached
+  -- Overestimates the states that could be reached
   states :: SMTPredicate -> Set Int
   states (StatePredicate i _) = Set.fromList [i, i - 1]
   states (BinaryPredicate i j _) = Set.fromList [i, j]
