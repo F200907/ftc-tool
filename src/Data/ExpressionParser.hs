@@ -32,6 +32,7 @@ data AExpr
   | Plus' AExpr AExpr
   | Minus' AExpr AExpr
   | Times' AExpr AExpr
+  | Modulo' AExpr AExpr
   deriving (Show)
 
 type AParser = Parser AExpr
@@ -46,6 +47,7 @@ toArithmeticExpr (Negation' a) = Negation (toArithmeticExpr a)
 toArithmeticExpr (Plus' a b) = Plus (toArithmeticExpr a) (toArithmeticExpr b)
 toArithmeticExpr (Minus' a b) = Minus (toArithmeticExpr a) (toArithmeticExpr b)
 toArithmeticExpr (Times' a b) = Times (toArithmeticExpr a) (toArithmeticExpr b)
+toArithmeticExpr (Modulo' a b) = Modulo (toArithmeticExpr a) (toArithmeticExpr b)
 
 toBooleanExpr :: BExpr -> BooleanExpr
 toBooleanExpr BTrue' = BTrue
@@ -66,6 +68,9 @@ minusToken = "-"
 
 plusToken :: Text
 plusToken = "+"
+
+moduloToken :: Text
+moduloToken = "%"
 
 timesToken :: Text
 timesToken = "*"
@@ -127,7 +132,7 @@ pConstant = Constant' <$> integer
 pATerm :: AParser
 pATerm =
   choice
-    [ parens pAExp,
+    [ lexeme $ parens pAExp,
       pVariable,
       pConstant
     ]
@@ -137,7 +142,7 @@ arithmeticOperatorTable =
   [ [ prefix minusToken Negation',
       prefix plusToken id
     ],
-    [binary timesToken Times'],
+    [binary timesToken Times', binary moduloToken Modulo'],
     [ binary plusToken Plus',
       binary minusToken Minus'
     ]
@@ -161,14 +166,14 @@ pFalse = do
 
 pRelation :: Text -> (AExpr -> AExpr -> BExpr) -> BParser
 pRelation name relation = try $ do
-  a <- pAExp
+  a <- lexeme pAExp 
   _ <- symbol name
   relation a <$> pAExp
 
 pBTerm :: BParser
 pBTerm =
   choice
-    [ parens pBExp,
+    [ try $ parens pBExp,
       pRelation equalToken Equal',
       pRelation neqToken NotEqual',
       pRelation lessToken LessThan',

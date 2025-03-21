@@ -6,10 +6,12 @@ module Main (Main.main) where
 
 import Data.Char (toLower)
 import Data.Text (pack, unpack)
-import Lib
+import Lib hiding (reinforce)
 import Options.Applicative
 import qualified Prettyprinter as P
 import Text.Megaparsec (parse)
+import qualified Data.Map as Map
+import qualified Lib
 
 data Mode = Verify | Parse | STF deriving (Show)
 
@@ -18,7 +20,8 @@ data Args = Args
     output :: Maybe String,
     mode :: Mode,
     pretty :: Bool,
-    debug :: Bool
+    debug :: Bool,
+    reinforce :: Bool
   }
   deriving (Show)
 
@@ -79,8 +82,17 @@ argDebug =
         <> help "Print debugging"
     )
 
+argReinforce :: Parser Bool
+argReinforce =
+  switch
+    ( long "reinforce"
+        <> short 'r'
+        <> showDefault
+        <> help "Reinforce the program's contracts"
+    )
+
 args :: Parser Args
-args = Args <$> argInput <*> argOutput <*> argMode <*> argHumanRedable <*> argDebug
+args = Args <$> argInput <*> argOutput <*> argMode <*> argHumanRedable <*> argDebug <*> argReinforce
 
 main :: IO ()
 main = entry =<< execParser opts
@@ -107,7 +119,8 @@ verify a = do
   let res = parse parseProgram "" s
   case res of
     Left err -> print err
-    Right p -> do
+    Right p' -> do
+      let p = if reinforce a then Lib.reinforce p' else p'
       putStrLn' "Parsed the program successfully:"
       putStrLn' p
       putStrLn' ""
@@ -122,12 +135,13 @@ verify a = do
                   case initialState valid of
                     Nothing -> return ()
                     Just state ->
-                      let state' = bigStep' p state (methodBody p m)
+                      let initial = foldl (\acc v -> if Map.member v acc then acc else Map.insert v 0 acc) state (variables p)
+                          final = bigStep' p initial (methodBody p m)
                        in do
                             putStrLn' "SOS semantics yields:"
-                            putStr' state
+                            putStr' initial
                             putStrLn' " -> "
-                            putStrLn' state'
+                            putStrLn' final
                   putStrLn ""
         )
         (methods p)

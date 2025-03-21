@@ -87,6 +87,7 @@ instance (Stateful ArithmeticExpr) where
   stateful (Exp.Plus a b) i j = Exp.Plus (stateful a i j) (stateful b i j)
   stateful (Exp.Minus a b) i j = Exp.Minus (stateful a i j) (stateful b i j)
   stateful (Exp.Times a b) i j = Exp.Times (stateful a i j) (stateful b i j)
+  stateful (Exp.Modulo a b) i j = Exp.Modulo (stateful a i j) (stateful b i j)
 
 instance (Stateful BooleanExpr) where
   stateful :: BooleanExpr -> Int -> Int -> BooleanExpr

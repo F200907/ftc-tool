@@ -43,6 +43,7 @@ instance (SMTify ArithmeticExpr) where
   smtify (Plus a b) = smtOp ("+" <+> smtify a <+> smtify b)
   smtify (Minus a b) = smtOp ("-" <+> smtify a <+> smtify b)
   smtify (Times a b) = smtOp ("*" <+> smtify a <+> smtify b)
+  smtify (Modulo a b) = smtOp ("mod" <+> smtify a <+> smtify b)
 
   states :: ArithmeticExpr -> Set Int
   states = const Set.empty

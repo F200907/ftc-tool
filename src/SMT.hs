@@ -86,7 +86,7 @@ checkValidity cfg@(Config libCfg _) (SMTInstance {variables, conditions, problem
   printDebug cfg info
   mapM_ (command_ solver . string8) (lines info)
   let states' = foldl (\acc c -> states c `Set.union` acc) (states problem) conditions
-  mapM_ (declareState cfg solver) (Set.toList states')
+  mapM_ (declareState cfg solver) (Set.toList $ states' `Set.difference` Set.singleton 0)
   mapM_ (assert cfg solver) conditions
   let p = smtOp ("assert" <+> smtOp ("not" <+> smtify problem))
   printDebug' cfg p

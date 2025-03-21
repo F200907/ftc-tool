@@ -20,16 +20,19 @@ module Data.Trace.Program
     contracts,
     contract,
     simpleProg,
+    reinforce,
   )
 where
 
 import Data.Expression
-import Data.Map.Strict (empty, insert)
-import Data.Maybe (catMaybes)
-import Data.Text (Text)
-import Prettyprinter
 import Data.FTC.Contract (Contract, Contracts, trueContract)
 import qualified Data.Map as Map
+import Data.Map.Strict (empty, insert)
+import Data.Maybe (catMaybes)
+import Data.Set (Set)
+import qualified Data.Set as Set
+import Data.Text (Text)
+import Prettyprinter
 
 type MethodName = Text
 
@@ -74,9 +77,13 @@ instance Pretty Program where
     vsep $
       map
         ( \(name, (pre, post), statement) ->
-            brackets (pretty pre) <> line <>
-            brackets (pretty post) <> line <>
-            pretty name <+> braces (line <> pretty statement <> line) <> line
+            brackets (pretty pre)
+              <> line
+              <> brackets (pretty post)
+              <> line
+              <> pretty name
+              <+> braces (line <> pretty statement <> line)
+              <> line
         )
         methods
         ++ map pretty (catMaybes [main])
@@ -91,6 +98,17 @@ instance (Renameable Statement) where
   rename (Condition b s1 s2) x x' = Condition (rename b x x') (rename s1 x x') (rename s2 x x')
   rename s@(Method _) _ _ = s
 
+instance (Variables Statement) where
+  variables :: Statement -> Set Text
+  variables Skip = Set.empty
+  variables (Assignment y a) = Set.insert y (variables a)
+  variables (Sequence s1 s2) = variables s1 `Set.union` variables s2
+  variables (Condition b s1 s2) = variables b `Set.union` variables s1 `Set.union` variables s2
+  variables (Method _) = Set.empty
+
+instance (Variables Program) where
+  variables :: Program -> Set Text
+  variables (Program {methods, main}) = foldl (\acc (_, (pre, post), s) -> variables s `Set.union` variables pre `Set.union` variables post `Set.union` acc) Set.empty methods `Set.union` maybe Set.empty variables main
 
 _testProgram :: Program
 _testProgram = Program {methods = [("down", trueContract, _testStatement), ("up", trueContract, _testStatement)], main = Just _testStatement}
@@ -115,6 +133,19 @@ contract m ((m', c, _) : xs)
 
 contracts :: Program -> Contracts
 contracts prog = foldl (\acc (m, c, _) -> Map.insert m c acc) Map.empty (methods prog)
+
+-- |
+--  Alters contracts to add identities to variables not occurring in postconditions, and TODO strengthens the procedure contracts of non-recursive procedures.
+reinforce :: Program -> Program
+reinforce program@(Program {methods}) =
+  let methods' = map (\(m, (pre, post), s) -> (m, (pre, post' post s), s)) methods
+      post' p s =
+        let ys = variables p `Set.union` variables s
+            zs = xs `Set.difference` ys
+            eqs = foldl (\acc z -> And acc (Equal (LVar z) (AVar z))) BTrue zs
+         in And p eqs
+      xs = variables program
+   in program {methods = methods'}
 
 -- SOS
 smallStep :: Program -> (Maybe Statement, Valuation)
@@ -141,4 +172,4 @@ bigStep' program v (Just s) = let (s', v') = smallStep' program v s in bigStep' 
 
 --
 simpleProg :: Program
-simpleProg = Program {methods = [("m",(Not (LessThan (AVar "x") (Constant 0)),Equal (AVar "x") (Constant 0)),Condition (Not (Or (LessThan (AVar "x") (Constant 0)) (Equal (AVar "x") (Constant 0)))) (Sequence (Assignment "x" (Minus (AVar "x") (Constant 1))) (Method "m")) Skip)], main = Just (Method "m")}
+simpleProg = Program {methods = [("m", (Not (LessThan (AVar "x") (Constant 0)), Equal (AVar "x") (Constant 0)), Condition (Not (Or (LessThan (AVar "x") (Constant 0)) (Equal (AVar "x") (Constant 0)))) (Sequence (Assignment "x" (Minus (AVar "x") (Constant 1))) (Method "m")) Skip)], main = Just (Method "m")}

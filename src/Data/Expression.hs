@@ -31,6 +31,7 @@ data ArithmeticExpr
   | Plus ArithmeticExpr ArithmeticExpr
   | Minus ArithmeticExpr ArithmeticExpr
   | Times ArithmeticExpr ArithmeticExpr
+  | Modulo ArithmeticExpr ArithmeticExpr
   deriving (Show)
 
 instance Pretty ArithmeticExpr where
@@ -46,6 +47,7 @@ instance Pretty ArithmeticExpr where
   pretty (Plus a b) = parens (pretty a <+> "+" <+> pretty b)
   pretty (Minus a b) = parens (pretty a <+> "-" <+> pretty b)
   pretty (Times a b) = parens (pretty a <+> "*" <+> pretty b)
+  pretty (Modulo a b) = parens (pretty a <+> "%" <+> pretty b)
 
 data BooleanExpr
   = BTrue
@@ -63,6 +65,7 @@ instance Pretty BooleanExpr where
   pretty BFalse = bot
   pretty (Not a) = lnot <> pretty a
   pretty (And a b) = parens (pretty a <+> land <+> pretty b)
+  pretty (Or (Not a) b) = parens (pretty a <+> implies <+> pretty b)
   pretty (Or a b) = parens (pretty a <+> lor <+> pretty b)
   pretty (Equal a b) = parens (pretty a <+> "=" <+> pretty b)
   pretty (LessThan a b) = parens (pretty a <+> "<" <+> pretty b)
@@ -82,6 +85,7 @@ instance (Variables ArithmeticExpr) where
   variables (Plus a b) = variables a `Set.union` variables b
   variables (Minus a b) = variables a `Set.union` variables b
   variables (Times a b) = variables a `Set.union` variables b
+  variables (Modulo a b) = variables a `Set.union` variables b
 
 instance (Variables BooleanExpr) where
   variables :: BooleanExpr -> Set Text
@@ -105,6 +109,7 @@ instance (Evaluable ArithmeticExpr Int) where
   evaluate (Plus a b) v = evaluate a v + evaluate b v
   evaluate (Minus a b) v = evaluate a v - evaluate b v
   evaluate (Times a b) v = evaluate a v * evaluate b v
+  evaluate (Modulo a b) v = evaluate a v `mod` evaluate b v
 
 instance (Evaluable BooleanExpr Bool) where
   evaluate :: BooleanExpr -> Valuation -> Bool
@@ -132,6 +137,7 @@ instance (Substitutable ArithmeticExpr VariableName ArithmeticExpr) where
   substitute (Plus a b) x x' = Plus (substitute a x x') (substitute b x x')
   substitute (Minus a b) x x' = Minus (substitute a x x') (substitute b x x')
   substitute (Times a b) x x' = Times (substitute a x x') (substitute b x x')
+  substitute (Modulo a b) x x' = Modulo (substitute a x x') (substitute b x x')
 
 instance (Substitutable BooleanExpr VariableName ArithmeticExpr) where
   substitute :: BooleanExpr -> VariableName -> ArithmeticExpr -> BooleanExpr

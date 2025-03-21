@@ -22,13 +22,15 @@ module Lib
     parseTraceFormula,
     rename,
     z3,
-    SMTInstance (..),
+    SMTInstance,
     checkValidity,
     contractCondition,
     cvc5,
     parseModel,
     initialState,
     withDebug,
+    reinforce,
+    Variables (..)
   )
 where
 

@@ -76,7 +76,7 @@ mc cs' i' s' phi' = mc' cs' i' s' phi'
         &&& (Not bPred ==> mc cs (i + 1) s2 phi)
       where
         bPred = Predicate (predicate i (StateFormula b))
-    mc' cs i (Method m) _ = (Predicate (StatePredicate i pre) ==> Predicate (StatePredicate (i + 1) post)) ==> postM
+    mc' cs i (Method m) _ = ((Predicate (StatePredicate i pre) ==> Predicate (BinaryPredicate i (i + 1) post))) ==> postM
       where
         (pre, post) = fromMaybe (error "FIXME: no contract found for a procedure") (lookupContract m cs)
     mc' cs i (Sequence (Assignment x a) s) phi = sb i x a ==> mc cs (i + 1) s phi
@@ -87,7 +87,7 @@ mc cs' i' s' phi' = mc' cs' i' s' phi'
         &&& (Not bPred ==> mc cs (i + 1) (s2 # s) phi)
       where
         bPred = Predicate (predicate i (StateFormula b))
-    mc' cs i (Sequence (Method m) s) phi = (Predicate (StatePredicate i pre) &&& Predicate (StatePredicate (i + 1) post)) ==> mc cs (i + 1) s phi
+    mc' cs i (Sequence (Method m) s) phi = ((Predicate (StatePredicate i pre) ==> Predicate (BinaryPredicate i (i + 1) post))) ==> mc cs (i + 1) s phi
       where
         (pre, post) = fromMaybe (error "FIXME: no contract found for a procedure") (lookupContract m cs)
     mc' cs i (Sequence (Sequence s1 s2) s3) phi = mc cs i (s1 # (s2 # s3)) phi
