@@ -26,6 +26,7 @@ module Lib
     checkValidity,
     contractCondition,
     cvc5,
+    ftc,
     parseModel,
     initialState,
     withDebug,

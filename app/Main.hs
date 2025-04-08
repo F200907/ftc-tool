@@ -145,6 +145,8 @@ verify a = do
                   putStrLn ""
         )
         (methods p)
+      let ftcInst = ftcCondition p 
+      return ()
   return ()
   where
     show' x = if pretty a then (show . P.pretty) x else toString x

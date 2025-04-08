@@ -60,7 +60,7 @@ import SMT.Instance (SMTInstance (SMTInstance), instanceOf)
 -- goals :: Statement -> TraceFormula -> [(Statement, TraceFormula)]
 -- goals (Assignment _ _)
 
-ftc :: Program -> Int -> Statement -> TraceFormula -> Set Text -> SMTFormula -> [SMTInstance] -- TODO change this to instances
+ftc :: Program -> Int -> Statement -> TraceFormula -> Set Text -> SMTFormula -> [SMTInstance]
 ftc p i' s tf xs' eta' =
   let (problem, sideconds) = ftc' i' s tf xs' eta'
    in instanceOf [constraints cs i' s] problem : sideconds

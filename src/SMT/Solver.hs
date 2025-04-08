@@ -7,24 +7,25 @@ module SMT.Solver (SMTInstance (..), checkValidity, cvc5, z3, contractCondition,
 import Data.ByteString (toStrict)
 import Data.ByteString.Builder (Builder, byteString, string8)
 import qualified Data.Expression as Exp
-import Data.FTC.FiniteTraceCalculus (constraints, mc)
+import Data.FTC.FiniteTraceCalculus (constraints, ftc, mc)
 import Data.Map (Map)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Text (Text, unpack)
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Data.Trace.Program (Program (main, methods), contract, contracts, lookupMethod)
+import Data.Trace.TraceLogic (TraceFormula (..))
 import Prettyprinter hiding ((<+>))
 import qualified Prettyprinter as P
-import SMT.ModelParser (parseModel)
 import SMT.Formula (SMTFormula (..))
+import SMT.Instance
+import SMT.ModelParser (parseModel)
 import SMT.SMTUtil (SMTify (smtify, states), genState, indexedState, smtOp, (<+>))
 import SMTLIB.Backends (QueuingFlag (NoQueuing), Solver, command, command_, initSolver)
 import SMTLIB.Backends.Process (Config (args, exe, std_err), StdStream (CreatePipe), new, toBackend)
 import qualified SMTLIB.Backends.Process as SMTLIB
 import Text.Megaparsec (parse)
 import Util.PrettyUtil (mapsTo)
-import SMT.Instance
 
 data Validity = Valid | Counterexample [(Int, Map Text Int)] deriving (Show)
 
@@ -105,13 +106,10 @@ contractCondition p m = case lookupMethod m (methods p) of
     _ -> invalidInstance
   _ -> invalidInstance
 
-ftcCondition :: Program -> SMTInstance
-ftcCondition p = case main p of
-  Just s ->
-    let conditions = [constraints (contracts p) 1 s]
-        problem = undefined
-     in instanceOf conditions problem
-  Nothing -> invalidInstance
+ftcCondition :: Program -> TraceFormula -> [SMTInstance]
+ftcCondition p phi = case main p of
+  Just s -> ftc p 1 s phi Set.empty Top
+  Nothing -> [invalidInstance]
 
 counterexample :: [Text] -> Text -> [(Int, Map Text Int)]
 counterexample vars raw = case parse (parseModel vars) "SMT-solver" raw of
@@ -128,4 +126,3 @@ printDebug (Config _ True) s = putStrLn s
 
 printDebug' :: Config' -> Text -> IO ()
 printDebug' cfg t = printDebug cfg (unpack t)
-

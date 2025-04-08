@@ -1,0 +1,9 @@
+[true]
+[x = 1]
+m {
+    if x != 1 then
+        x := 10;
+        m()
+    else
+        skip
+}
