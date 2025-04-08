@@ -36,11 +36,11 @@ library
       Data.Trace.TraceLogic
       Data.Trace.TraceLogicParser
       Lib
-      SMT
+      SMT.Formula
+      SMT.Instance
       SMT.ModelParser
-      SMT.SMTFormula
-      SMT.SMTPredicate
       SMT.SMTUtil
+      SMT.Solver
       Util.ParserUtil
       Util.PrettyUtil
   other-modules:

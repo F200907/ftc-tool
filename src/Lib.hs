@@ -30,15 +30,18 @@ module Lib
     initialState,
     withDebug,
     reinforce,
-    Variables (..)
+    constraints,
+    ftcCondition,
+    Variables (..),
   )
 where
 
 import Data.Expression
 import Data.ExpressionParser
+import Data.FTC.FiniteTraceCalculus
 import Data.Trace.Program
 import Data.Trace.ProgramParser
 import Data.Trace.TraceLogic
 import Data.Trace.TraceLogicParser
-import SMT
+import SMT.Solver
 import SMT.ModelParser

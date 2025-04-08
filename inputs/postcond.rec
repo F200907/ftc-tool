@@ -1,0 +1,9 @@
+[false]
+[true]
+down {
+    if x > 0 then
+        x := x - 2;
+        down()
+    else
+        skip
+}
