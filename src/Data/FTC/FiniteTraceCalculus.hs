@@ -71,6 +71,10 @@ ftc p i' s tf xs' eta' =
       Just (pre, _) -> pre
       Nothing -> error "FIXME: no contract found for a procedure"
 
+    -- m' :: Int -> Statement -> TraceFormula -> Set Text -> SMTFormula -> (SMTFormula, [SMTInstance])
+    -- m' i (Method m)
+    -- m' _ _ _ _ _ = undefined
+
     ftc' :: Int -> Statement -> TraceFormula -> Set Text -> SMTFormula -> (SMTFormula, [SMTInstance])
     ftc' i (Assignment _ _) phi _ eta = (predicate i phi &&& eta, [])
     ftc' i Skip phi _ eta = (predicate i phi &&& eta, [])

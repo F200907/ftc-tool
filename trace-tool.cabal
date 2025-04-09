@@ -31,6 +31,7 @@ library
       Data.FTC.Contract
       Data.FTC.FiniteTraceCalculus
       Data.Trace.CanonicalProgram
+      Data.Trace.Normalise
       Data.Trace.Program
       Data.Trace.ProgramParser
       Data.Trace.TraceLogic
