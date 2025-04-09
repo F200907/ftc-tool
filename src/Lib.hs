@@ -27,6 +27,7 @@ module Lib
     contractCondition,
     cvc5,
     ftc,
+    parseProblem,
     parseModel,
     initialState,
     withDebug,
@@ -46,3 +47,4 @@ import Data.Trace.TraceLogic
 import Data.Trace.TraceLogicParser
 import SMT.Solver
 import SMT.ModelParser
+import Data.ProblemParser

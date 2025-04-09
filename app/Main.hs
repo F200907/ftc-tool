@@ -4,14 +4,16 @@
 
 module Main (Main.main) where
 
+import Control.Monad (when)
 import Data.Char (toLower)
+import qualified Data.Map as Map
+import Data.Maybe (isJust)
 import Data.Text (pack, unpack)
 import Lib hiding (reinforce)
+import qualified Lib
 import Options.Applicative
 import qualified Prettyprinter as P
 import Text.Megaparsec (parse)
-import qualified Data.Map as Map
-import qualified Lib
 
 data Mode = Verify | Parse | STF deriving (Show)
 
@@ -116,12 +118,19 @@ source a = maybe getContents readFile (input a)
 verify :: Args -> IO ()
 verify a = do
   s <- pack <$> source a
-  let res = parse parseProgram "" s
+  let res = parse parseProblem "" s
   case res of
     Left err -> print err
-    Right p' -> do
+    Right (tf, p') -> do
+      when
+        (isJust tf)
+        ( do
+            putStrLn' "Parsed trace formula:"
+            putStrLn' tf
+        )
+
       let p = if reinforce a then Lib.reinforce p' else p'
-      putStrLn' "Parsed the program successfully:"
+      putStrLn' "Parsed program:"
       putStrLn' p
       putStrLn' ""
       mapM_
@@ -145,7 +154,20 @@ verify a = do
                   putStrLn ""
         )
         (methods p)
-      let ftcInst = ftcCondition p 
+      ( case tf of
+          Just tf' ->
+            mapM_
+              ( \inst ->
+                  let smt = withDebug z3 (debug a)
+                   in do
+                    putStrLn' "Checking SMT problem:"
+                    putStrLn' inst
+                    valid <- checkValidity smt inst
+                    putStrLn' valid
+              )
+              (ftcCondition p tf')
+          Nothing -> return ()
+        )
       return ()
   return ()
   where

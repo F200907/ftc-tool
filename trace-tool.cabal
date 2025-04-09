@@ -30,6 +30,7 @@ library
       Data.FTC.Admissibility
       Data.FTC.Contract
       Data.FTC.FiniteTraceCalculus
+      Data.ProblemParser
       Data.Trace.CanonicalProgram
       Data.Trace.Normalise
       Data.Trace.Program

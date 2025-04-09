@@ -10,8 +10,8 @@ import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Text (Text)
 import Data.Trace.Program
-import Data.Trace.TraceLogic (TraceFormula (Chop, Mu, StateFormula), unfold)
-import SMT.Formula (SMTFormula (..), predicate, (&&&), (==>))
+import Data.Trace.TraceLogic (TraceFormula (..), unfold)
+import SMT.Formula (SMTFormula (..), predicate, (&&&), (==>), (|||))
 import SMT.Instance (SMTInstance (SMTInstance), instanceOf)
 
 -- ftc :: Int -> Statement -> TraceFormula -> Set Text -> SMTFormula
@@ -61,9 +61,9 @@ import SMT.Instance (SMTInstance (SMTInstance), instanceOf)
 -- goals (Assignment _ _)
 
 ftc :: Program -> Int -> Statement -> TraceFormula -> Set Text -> SMTFormula -> [SMTInstance]
-ftc p i' s tf xs' eta' =
-  let (problem, sideconds) = ftc' i' s tf xs' eta'
-   in instanceOf [constraints cs i' s] problem : sideconds
+ftc p i0 s0 tf0 xs0 eta0 =
+  let (problem, sideconds) = ftc' i0 s0 tf0 xs0 eta0
+   in instanceOf [constraints cs i0 s0] problem : sideconds
   where
     cs = contracts p
 
@@ -86,9 +86,8 @@ ftc p i' s tf xs' eta' =
       | x `Set.member` xs = (StatePredicate i (pre' m) &&& predicate i phi &&& eta, [])
       | otherwise =
           let sm = fromMaybe (error "procedure not defined") (methodBody p m)
-              xs' = Set.insert x xs
               mu' = unfold mu
-              (f', a') = ftc' 1 sm mu' xs' Top
+              (f', a') = ftc' 1 sm mu' (Set.insert x xs) Top
               inst' = instanceOf [constraints cs 1 sm, StatePredicate 1 (pre' m)] f'
            in (StatePredicate i (pre' m) &&& predicate i phi &&& eta, inst' : a')
     ftc' i (Sequence (Assignment _ _) s') (Chop phi phi') xs eta = ftc' (i + 1) s' phi' xs (predicate i phi &&& eta)
@@ -98,13 +97,21 @@ ftc p i' s tf xs' eta' =
       | x `Set.member` xs = ftc' (i + 1) s' phi' xs (StatePredicate i (pre' m) &&& predicate i phi &&& eta)
       | otherwise =
           let sm = fromMaybe (error "procedure not defined") (methodBody p m)
-              xs' = Set.insert x xs
               mu' = unfold mu
-              (f', a') = ftc' 1 sm mu' xs' Top
+              (f', a') = ftc' 1 sm mu' (Set.insert x xs) Top
               (f'', a'') = ftc' (i + 1) s' phi' xs (StatePredicate i (pre' m) &&& predicate i phi &&& eta)
               inst' = instanceOf [constraints cs 1 sm, StatePredicate 1 (pre' m)] f'
            in (f'', inst' : a' ++ a'')
     ftc' i (Sequence (Sequence s1 s2) s3) phi xs eta = ftc' i (s1 # (s2 # s3)) phi xs eta
+    ftc' i s (Disjunction phi1 phi2) xs eta = let 
+      (f1, a1) = ftc' i s phi1 xs eta
+      (f2, a2) = ftc' i s phi2 xs eta
+      in (f1 ||| f2, a1 ++ a2)
+    ftc' i s (Conjunction phi1 phi2) xs eta = let 
+      (f1, a1) = ftc' i s phi1 xs eta
+      (f2, a2) = ftc' i s phi2 xs eta
+      in (f1 &&& f2, a1 ++ a2)
+    ftc' i s mu@(Mu _ _) xs eta = ftc' i s (unfold mu) xs eta
     ftc' _ _ _ _ _ = (Bot, [])
 
 mc :: Contracts -> Int -> Statement -> BooleanExpr -> SMTFormula
