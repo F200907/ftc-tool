@@ -6,6 +6,7 @@ module Data.Trace.Normalise (Normalisable (..)) where
 
 -- import Data.Text ()
 import Data.Trace.TraceLogic (TraceFormula (..))
+import Data.Trace.Program (Statement (..))
 
 class Normalisable a where
   normalise :: a -> a
@@ -21,6 +22,17 @@ instance (Normalisable TraceFormula) where
     Chop tf1' tf2' -> Chop tf1' (normalise (Chop tf2' tf3))
     tf1' -> Chop tf1' (normalise tf3)
   normalise (Mu x tf') = Mu x (normalise tf')
+
+instance (Normalisable Statement) where
+  normalise :: Statement -> Statement
+  normalise Skip = Skip
+  normalise s@(Assignment _ _) = s
+  normalise (Sequence s1 s3) = case normalise s1 of
+    Sequence s1' s2' -> Sequence s1' (normalise (Sequence s2' s3))
+    s1' -> Sequence s1' (normalise s3)
+  normalise (Condition b s1 s2) = Condition b (normalise s1) (normalise s2)
+  normalise s@(Method _) = s
+    
 
 -- normaliseCheck :: TraceFormula -> Bool
 -- normaliseCheck (Conjunction tf1 tf2) = normaliseCheck tf1 && normaliseCheck tf2
