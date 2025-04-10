@@ -10,6 +10,7 @@ import Data.Set (Set)
 import Data.Text (Text)
 import Prettyprinter (Doc, Pretty (..), line, vsep)
 import SMT.Formula (SMTFormula (..))
+import qualified Data.Set as Set
 
 data SMTInstance = SMTInstance {conditions :: [SMTFormula], problem :: SMTFormula} deriving (Show)
 
@@ -26,7 +27,7 @@ invalidInstance = SMTInstance {conditions = [], problem = Bot}
 
 instance (Variables SMTInstance) where
   variables :: SMTInstance -> Set Text
-  variables (SMTInstance {problem}) = variables problem
+  variables (SMTInstance {conditions, problem}) = foldl (\acc smt -> acc `Set.union` variables smt) (variables problem) conditions
 
 instanceOf :: [SMTFormula] -> SMTFormula -> SMTInstance
 instanceOf conditions problem = SMTInstance {conditions = conditions, problem = problem}

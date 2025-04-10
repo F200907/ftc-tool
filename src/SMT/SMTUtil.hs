@@ -11,7 +11,9 @@ import Data.Text (Text, pack)
 import qualified Data.Text as Text
 
 genState :: [Text] -> Text
-genState xs = declareDatatype <> "\n" <> idPred <> "\n" <> foldl (\acc x -> acc <> sbPred x <> "\n") "" xs
+genState xs
+  | null xs = declareDatatype <> "(define-fun id ((s1 State) (s2 State)) Bool true)"
+  | otherwise = declareDatatype <> "\n" <> idPred <> "\n" <> foldl (\acc x -> acc <> sbPred x <> "\n") "" xs
   where
     declareDatatype = "(declare-datatypes ((State 0)) (((mk-state " <> concatWithSpace declareDatatype' <> "))))"
     declareDatatype' = map (\x -> "(" <> x <> " Int)") xs
@@ -39,7 +41,9 @@ instance (SMTify ArithmeticExpr) where
   smtify (AVar x) = x
   smtify (LVar x) = x
   smtify (Negation c@(Constant _)) = "-" <> smtify c
-  smtify (Negation a) = smtOp ("-" <> smtify a)
+  smtify (Negation a) = let a' = smtify a in
+    if Text.take 1 a' == "-" then Text.drop 1 a' else 
+      smtOp ("-" <> a')
   smtify (Plus a b) = smtOp ("+" <+> smtify a <+> smtify b)
   smtify (Minus a b) = smtOp ("-" <+> smtify a <+> smtify b)
   smtify (Times a b) = smtOp ("*" <+> smtify a <+> smtify b)

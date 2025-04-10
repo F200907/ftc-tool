@@ -1,0 +1,5 @@
+"((false) && (Id ~ Id)) || ((!false) && (Id ~ Sb_u^(170)))"
+if false then
+    skip
+        else
+    u := 170

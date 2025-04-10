@@ -26,6 +26,9 @@ dependencies:
 - prettyprinter >= 1.7.1 && < 1.8
 - text >= 2.0 && < 2.2
 - parser-combinators
+- hspec
+- hedgehog
+- hspec-hedgehog
 # - hasmtlib >= 2.8 && < 2.9
 - smtlib-backends-process
 - smtlib-backends

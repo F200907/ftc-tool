@@ -26,8 +26,9 @@ import SMTLIB.Backends.Process (Config (args, exe, std_err), StdStream (CreatePi
 import qualified SMTLIB.Backends.Process as SMTLIB
 import Text.Megaparsec (parse)
 import Util.PrettyUtil (mapsTo)
+import Data.Trace.Normalise (Normalisable(normalise))
 
-data Validity = Valid | Counterexample [(Int, Map Text Int)] deriving (Show)
+data Validity = Valid | Counterexample [(Int, Map Text Int)] deriving (Show, Eq)
 
 instance (Pretty Validity) where
   pretty :: Validity -> Doc ann
@@ -67,7 +68,8 @@ declareState cfg solver idx =
 
 setupSolver :: Config' -> Solver -> IO ()
 setupSolver cfg solver = do
-  printDebug cfg "(set-logic ALL)\n(set-option :produce-unsat-cores true) ; enable generation of unsat cores"
+  printDebug cfg "(reset)\n(set-logic ALL)\n(set-option :produce-unsat-cores true) ; enable generation of unsat cores"
+  command_ solver "(reset)"
   command_ solver "(set-logic ALL)"
   command_ solver "(set-option :produce-unsat-cores true) ; enable generation of unsat cores"
 
@@ -87,8 +89,8 @@ checkValidity cfg@(Config libCfg _) inst@(SMTInstance {conditions, problem}) = d
   printDebug' cfg p
   command_ solver $ text2Builder p
   s <- command solver "(check-sat)"
-  let valid = decodeUtf8 (toStrict s) == "unsat"
-  ( if valid
+  let invalid = decodeUtf8 (toStrict s) == "sat"
+  ( if not invalid
       then return Valid
       else
         ( do
@@ -108,12 +110,12 @@ contractCondition p m = case lookupMethod m (methods p) of
 
 ftcCondition :: Program -> TraceFormula -> [SMTInstance]
 ftcCondition p phi = case main p of
-  Just s -> ftc p 1 s phi Set.empty Top
+  Just s -> ftc p 1 (normalise s) (normalise phi) Set.empty Top
   Nothing -> [invalidInstance]
 
 counterexample :: [Text] -> Text -> [(Int, Map Text Int)]
 counterexample vars raw = case parse (parseModel vars) "SMT-solver" raw of
-  Left err -> error (show err)
+  Left err -> error ((show err)  ++ "\n" ++ show raw)
   Right model -> Map.toAscList model
 
 initialState :: Validity -> Maybe (Map Text Int)
