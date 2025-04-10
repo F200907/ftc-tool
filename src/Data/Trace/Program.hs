@@ -21,6 +21,7 @@ module Data.Trace.Program
     contract,
     simpleProg,
     reinforce,
+    atomic,
   )
 where
 
@@ -133,6 +134,11 @@ contract m ((m', c, _) : xs)
 
 contracts :: Program -> Contracts
 contracts prog = foldl (\acc (m, c, _) -> Map.insert m c acc) Map.empty (methods prog)
+
+atomic :: Statement -> Bool
+atomic Skip = True
+atomic (Assignment _ _) = True
+atomic _ = False
 
 -- |
 --  Alters contracts to add identities to variables not occurring in postconditions, and TODO strengthens the procedure contracts of non-recursive procedures.

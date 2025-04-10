@@ -16,15 +16,29 @@ class Normalisable a where
 
 instance (Normalisable TraceFormula) where
   normalise :: TraceFormula -> TraceFormula
-  normalise tf@(StateFormula _) = tf
-  normalise tf@(BinaryRelation _) = tf
-  normalise tf@(RecursiveVariable _) = tf
-  normalise (Conjunction tf1 tf2) = Conjunction (normalise tf1) (normalise tf2)
-  normalise (Disjunction tf1 tf2) = Disjunction (normalise tf1) (normalise tf2)
-  normalise (Chop tf1 tf3) = case normalise tf1 of
-    Chop tf1' tf2' -> Chop tf1' (normalise (Chop tf2' tf3))
-    tf1' -> Chop tf1' (normalise tf3)
-  normalise (Mu x tf') = Mu x (normalise tf')
+  normalise = distribute . chopAssoc
+    where
+      chopAssoc :: TraceFormula -> TraceFormula
+      chopAssoc tf@(StateFormula _) = tf
+      chopAssoc tf@(BinaryRelation _) = tf
+      chopAssoc tf@(RecursiveVariable _) = tf
+      chopAssoc (Conjunction tf1 tf2) = Conjunction (chopAssoc tf1) (chopAssoc tf2)
+      chopAssoc (Disjunction tf1 tf2) = Disjunction (chopAssoc tf1) (chopAssoc tf2)
+      chopAssoc (Chop tf1 tf3) = case chopAssoc tf1 of
+        Chop tf1' tf2' -> Chop tf1' (chopAssoc (Chop tf2' tf3))
+        tf1' -> Chop tf1' (chopAssoc tf3)
+      chopAssoc (Mu x tf') = Mu x (chopAssoc tf')
+
+      distribute :: TraceFormula -> TraceFormula
+      distribute (Chop (Disjunction tf1 tf2) tf3) = normalise (Disjunction (Chop tf1 tf3) (Chop tf2 tf3))
+      distribute (Chop (Conjunction tf1 tf2) tf3) = normalise (Conjunction (Chop tf1 tf3) (Chop tf2 tf3))
+      distribute (Chop tf1 tf2) = Chop tf1 (distribute tf2)
+      distribute tf@(StateFormula _) = tf
+      distribute tf@(BinaryRelation _) = tf
+      distribute tf@(RecursiveVariable _) = tf
+      distribute (Conjunction tf1 tf2) = Conjunction (distribute tf1) (distribute tf2)
+      distribute (Disjunction tf1 tf2) = Disjunction (distribute tf1) (distribute tf2)
+      distribute (Mu x tf) = Mu x (distribute tf)
 
 instance (Normalisable Statement) where
   normalise :: Statement -> Statement
@@ -35,15 +49,6 @@ instance (Normalisable Statement) where
     s1' -> Sequence s1' (normalise s3)
   normalise (Condition b s1 s2) = Condition b (normalise s1) (normalise s2)
   normalise s@(Method _) = s
-
--- normaliseCheck :: TraceFormula -> Bool
--- normaliseCheck (Conjunction tf1 tf2) = normaliseCheck tf1 && normaliseCheck tf2
--- normaliseCheck (Disjunction tf1 tf2) = normaliseCheck tf1 && normaliseCheck tf2
--- normaliseCheck (Mu _ tf') = normaliseCheck tf'
--- normaliseCheck (Chop tf1 tf2) = case tf1 of
---   Chop _ _ -> False
---   _ -> normaliseCheck tf1 && normaliseCheck tf2
--- normaliseCheck _ = True
 
 -- allChops 0 = [RecursiveVariable "x"]
 -- allChops n =

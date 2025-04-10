@@ -127,6 +127,8 @@ verify a = do
         ( do
             putStrLn' "Parsed trace formula:"
             putStrLn' tf
+            putStrLn' "Normalised trace formula:"
+            do case tf of Just tf' -> putStrLn' (normalise tf')
         )
 
       let p = if reinforce a then Lib.reinforce p' else p'

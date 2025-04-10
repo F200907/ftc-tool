@@ -31,6 +31,7 @@ module Lib
     parseModel,
     initialState,
     withDebug,
+    normalise,
     reinforce,
     constraints,
     ftcCondition,
@@ -48,3 +49,4 @@ import Data.Trace.TraceLogicParser
 import SMT.Solver
 import SMT.ModelParser
 import Data.ProblemParser
+import Data.Trace.Normalise
