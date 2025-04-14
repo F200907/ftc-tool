@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
-module Data.Expression (VariableName, ArithmeticExpr (..), BooleanExpr (..), Valuation, Renameable (..), Substitutable (..), Evaluable (..), Variables (..)) where
+module Data.Expression (VariableName, ArithmeticExpr (..), BooleanExpr (..), Valuation, Substitutable (..), Evaluable (..)) where
 
 import Data.Map.Strict (Map, lookup)
 import Data.Maybe (fromMaybe)
@@ -18,8 +18,8 @@ import Prettyprinter
   )
 import Util.PrettyUtil
 import Prelude hiding (lookup)
+import Data.Variable (VariableName, Variables (..), Renameable (..))
 
-type VariableName = Text
 
 type Valuation = Map VariableName Int
 
@@ -73,8 +73,6 @@ instance Pretty BooleanExpr where
 _testExpression :: BooleanExpr
 _testExpression = And BTrue (And (Not BFalse) (And (Equal (Plus (Constant 0) (AVar "x")) (Minus (Constant 1) (Constant (-7)))) (LessThan (Times (AVar "y") (AVar "y")) (Constant 19))))
 
-class Variables a where
-  variables :: a -> Set Text
 
 instance (Variables ArithmeticExpr) where
   variables :: ArithmeticExpr -> Set Text
@@ -148,8 +146,6 @@ instance (Substitutable BooleanExpr VariableName ArithmeticExpr) where
   substitute (LessThan a b) x x' = LessThan (substitute a x x') (substitute b x x')
   substitute b _ _ = b
 
-class Renameable a where
-  rename :: a -> VariableName -> VariableName -> a
 
 instance (Renameable ArithmeticExpr) where
   rename :: ArithmeticExpr -> VariableName -> VariableName -> ArithmeticExpr

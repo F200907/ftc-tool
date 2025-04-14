@@ -5,12 +5,12 @@
 
 module SMT.Instance (SMTInstance (..), invalidInstance, instanceOf) where
 
-import Data.Expression (Variables (..))
 import Data.Set (Set)
 import Data.Text (Text)
 import Prettyprinter (Doc, Pretty (..), line, vsep)
 import SMT.Formula (SMTFormula (..))
 import qualified Data.Set as Set
+import Data.Variable
 
 data SMTInstance = SMTInstance {conditions :: [SMTFormula], problem :: SMTFormula} deriving (Show)
 

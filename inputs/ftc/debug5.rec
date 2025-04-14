@@ -1,0 +1,6 @@
+"((true) && Id ~ Id) ~ Sb_a^(0)"
+(if true then
+  skip
+else
+  skip; skip);
+a := 0

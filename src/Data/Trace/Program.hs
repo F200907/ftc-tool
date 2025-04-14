@@ -34,6 +34,7 @@ import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Text (Text)
 import Prettyprinter
+import Data.Variable (Renameable (..), Variables (..))
 
 type MethodName = Text
 

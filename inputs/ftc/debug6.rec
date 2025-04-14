@@ -1,0 +1,9 @@
+"(true) ~ Sb_a^(0)"
+(if true then
+  skip;
+  skip
+else
+  skip);
+a := 0
+
+// consumes the wrong chop order

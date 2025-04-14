@@ -4,13 +4,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
-module Data.Trace.TraceLogic (TraceFormula (..), strongestTraceFormula', strongestTraceFormula, BinaryRelation (..), substitute, unfold) where
+module Data.Trace.TraceLogic (TraceFormula (..), strongestTraceFormula', strongestTraceFormula, BinaryRelation (..), substitute, unfold, expandP) where
 
 import Data.Expression
 import Data.Maybe (fromMaybe)
+import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Text (Text, unpack)
 import Data.Trace.Program (Program (Program, main, methods), Statement (Assignment, Condition, Method, Sequence, Skip), lookupMethod)
+import Data.Variable (Renameable (..), fresh)
 import Prettyprinter
 import Util.PrettyUtil
 
@@ -45,10 +47,37 @@ instance Pretty TraceFormula where
 _testTrace :: TraceFormula
 _testTrace = Chop (BinaryRelation Id) (Mu "even" (Disjunction (Conjunction (StateFormula (Equal (AVar "x") (Constant 0))) (Chop (BinaryRelation Id) (BinaryRelation (Sb "y" (Constant 1))))) (Conjunction (StateFormula (Not (Equal (AVar "x") (Constant 0)))) (Chop (BinaryRelation Id) (Chop (BinaryRelation (Sb "x" (Minus (AVar "x") (Constant 1)))) (Chop (BinaryRelation Id) (Mu "odd" (Disjunction (Conjunction (StateFormula (Equal (AVar "x") (Constant 0))) (Chop (BinaryRelation Id) (BinaryRelation (Sb "y" (Constant 0))))) (Conjunction (StateFormula (Not (Equal (AVar "x") (Constant 0)))) (Chop (BinaryRelation Id) (Chop (BinaryRelation (Sb "x" (Minus (AVar "x") (Constant 1)))) (Chop (BinaryRelation Id) (RecursiveVariable "even")))))))))))))
 
+-- rvars :: TraceFormula -> Set RecursiveVar
+-- rvars (StateFormula _) = Set.empty
+-- rvars (BinaryRelation _) = Set.empty
+-- rvars (RecursiveVariable x) = Set.singleton x
+-- rvars (Conjunction a b) = rvars a `Set.union` rvars b
+-- rvars (Disjunction a b) = rvars a `Set.union` rvars b
+-- rvars (Chop a b) = rvars a `Set.union` rvars b
+-- rvars (Mu x phi) = Set.insert x (rvars phi)
+
+-- |
+-- Replaces every state formula `p` by `p | (p ~ \\X. (true | true ~ X))`.
+-- The latter can be correctly evaluated by ftc
+expandP :: TraceFormula -> TraceFormula
+expandP = expandP' Set.empty
+  where
+    expandP' :: Set RecursiveVar -> TraceFormula -> TraceFormula
+    expandP' xs tf@(StateFormula _) =
+      let y = fresh xs
+          true = StateFormula BTrue
+       in Disjunction tf (Chop tf (Mu y (Disjunction true (Chop true (RecursiveVariable y)))))
+    expandP' _ tf@(BinaryRelation _) = tf
+    expandP' _ tf@(RecursiveVariable _) = tf
+    expandP' xs (Conjunction a b) = Conjunction (expandP' xs a) (expandP' xs b)
+    expandP' xs (Disjunction a b) = Disjunction (expandP' xs a) (expandP' xs b)
+    expandP' xs (Chop a b) = Chop (expandP' xs a) (expandP' xs b)
+    expandP' xs (Mu x phi) = Mu x (expandP' (Set.insert x xs) phi)
+
 strongestTraceFormula :: Program -> TraceFormula
 strongestTraceFormula program@(Program {main}) = case main of
   Just s -> strongestTraceFormula' program s
-  Nothing -> BinaryRelation Id
+  Nothing -> StateFormula BFalse
 
 strongestTraceFormula' :: Program -> Statement -> TraceFormula
 strongestTraceFormula' (Program {methods}) = stf Set.empty

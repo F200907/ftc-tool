@@ -32,10 +32,11 @@ module Lib
     initialState,
     withDebug,
     normalise,
+    depth,
     reinforce,
     constraints,
     ftcCondition,
-    Variables (..),
+    Variables (..)
   )
 where
 
@@ -50,3 +51,4 @@ import SMT.Solver
 import SMT.ModelParser
 import Data.ProblemParser
 import Data.Trace.Normalise
+import Data.Variable

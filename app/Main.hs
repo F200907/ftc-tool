@@ -122,15 +122,12 @@ verify a = do
   case res of
     Left err -> print err
     Right (tf, p') -> do
-      when
-        (isJust tf)
-        ( do
-            putStrLn' "Parsed trace formula:"
-            putStrLn' tf
-            putStrLn' "Normalised trace formula:"
-            do case tf of Just tf' -> putStrLn' (normalise tf')
-        )
-
+      putStrLn' "Parsed trace formula:"
+      putStrLn' tf
+      
+      let normTF = normalise <$> tf
+      putStrLn' "Normalised trace formula:"
+      putStrLn' normTF
       let p = if reinforce a then Lib.reinforce p' else p'
       putStrLn' "Parsed program:"
       putStrLn' p
@@ -156,18 +153,20 @@ verify a = do
                   putStrLn ""
         )
         (methods p)
-      ( case tf of
+      case (Lib.main p) of
+        Just s -> putStrLn' (depth s)
+      ( case normTF of
           Just tf' ->
             mapM_
               ( \inst ->
                   let smt = withDebug z3 (debug a)
                    in do
-                    putStrLn' "Checking SMT problem:"
-                    putStrLn' inst
-                    valid <- checkValidity smt inst
-                    putStrLn' valid
+                        putStrLn' "Checking SMT problem:"
+                        putStrLn' inst
+                        valid <- checkValidity smt inst
+                        putStrLn' valid
               )
-              (ftcCondition p tf')
+              (ftcCondition (normalise p) tf')
           Nothing -> return ()
         )
       return ()

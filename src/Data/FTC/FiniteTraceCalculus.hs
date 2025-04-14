@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 {-# HLINT ignore "Redundant IdentityPredicate" #-}
-module Data.FTC.FiniteTraceCalculus (ftc, mc, constraints) where
+module Data.FTC.FiniteTraceCalculus (ftc, mc, constraints, depth) where
 
 import Data.Expression (BooleanExpr)
 import Data.FTC.Contract (Contracts, lookupContract)
@@ -66,6 +66,13 @@ import qualified Debug.Trace as Trace
 trace a b = Trace.trace a b
 -- trace a b = b
 
+depth :: Statement -> Int
+depth Skip = 1
+depth (Assignment _ _) = 1
+depth (Condition _ s1 s2) = max (depth s1) (depth s2) + 1
+depth (Sequence s1 s2) = depth s1 + depth s2
+depth (Method _) = 1
+
 ftc :: Program -> Int -> Statement -> TraceFormula -> Set Text -> SMTFormula -> [SMTInstance]
 ftc p i0 s0 tf0 xs0 eta0 =
   let (problem, sideconds) = ftc' i0 s0 tf0 xs0 eta0
@@ -98,7 +105,7 @@ ftc p i0 s0 tf0 xs0 eta0 =
            in (StatePredicate i (pre' m) &&& predicate i phi &&& eta, inst' : a')
     ftc' i (Sequence (Assignment _ _) s') (Chop phi phi') xs eta = ftc' (i + 1) s' phi' xs (predicate i phi &&& eta)
     ftc' i (Sequence Skip s') (Chop phi phi') xs eta = ftc' (i + 1) s' phi' xs (predicate i phi &&& eta)
-    ftc' i (Sequence (Condition b s1 s2) s') tf@(Chop _ _) xs eta = ftc' i (Condition b (normalise (s1 # s')) (normalise (s2 # s'))) tf xs eta
+    ftc' i (Sequence (Condition b s1 s2) s') tf xs eta = ftc' i (Condition b (normalise (s1 # s')) (normalise (s2 # s'))) tf xs eta
     ftc' i (Sequence (Method m) s') (Chop phi (Chop mu@(Mu x _) phi')) xs eta
       | x `Set.member` xs = ftc' (i + 1) s' phi' xs (StatePredicate i (pre' m) &&& predicate i phi &&& eta)
       | otherwise =
@@ -121,7 +128,7 @@ ftc p i0 s0 tf0 xs0 eta0 =
     ftc' i s (StateFormula sf) xs eta = (StatePredicate i sf, [])
     ftc' i s b@(BinaryRelation _) xs eta = (predicate (i - 1) b, [])
     ftc' i s tf xs eta = trace ("Empty: " ++ show [show i, show s, show tf, show xs, show eta]) (Bot, [])
-    ftc' _ _ _ _ _ = (error $ show Bot, [])
+    -- ftc' _ _ _ _ _ = (error $ show Bot, [])
 
 mc :: Contracts -> Int -> Statement -> BooleanExpr -> SMTFormula
 mc cs' i' s' phi' = mc' cs' i' s' phi'

@@ -37,6 +37,7 @@ library
       Data.Trace.ProgramParser
       Data.Trace.TraceLogic
       Data.Trace.TraceLogicParser
+      Data.Variable
       Lib
       SMT.Formula
       SMT.Instance
@@ -100,6 +101,7 @@ test-suite trace-tool-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      FreshSpec
       NormaliseSpec
       SpecUtil
       STFSpec

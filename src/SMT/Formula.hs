@@ -3,7 +3,7 @@
 
 module SMT.Formula (SMTFormula (..), (==>), (&&&), (|||), predicate) where
 
-import Data.Expression (ArithmeticExpr, BooleanExpr, VariableName, Variables (variables))
+import Data.Expression (ArithmeticExpr, BooleanExpr, VariableName)
 import qualified Data.Expression as Exp
 import Data.Set (Set)
 import qualified Data.Set as Set
@@ -13,6 +13,7 @@ import qualified Prettyprinter as P
 import SMT.SMTUtil (SMTify (smtify, states), indexedState, smtOp, (<+>))
 import Util.PrettyUtil (bot, implies, land, lnot, lor, top)
 import Data.Trace.TraceLogic (TraceFormula (..), BinaryRelation (..), unfold)
+import Data.Variable
 
 data SMTFormula
   = Top

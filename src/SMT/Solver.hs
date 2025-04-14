@@ -26,7 +26,7 @@ import SMTLIB.Backends.Process (Config (args, exe, std_err), StdStream (CreatePi
 import qualified SMTLIB.Backends.Process as SMTLIB
 import Text.Megaparsec (parse)
 import Util.PrettyUtil (mapsTo)
-import Data.Trace.Normalise (Normalisable(normalise))
+import qualified Data.Variable as Variable
 
 data Validity = Valid | Counterexample [(Int, Map Text Int)] deriving (Show, Eq)
 
@@ -75,7 +75,7 @@ setupSolver cfg solver = do
 
 checkValidity :: Config' -> SMTInstance -> IO Validity
 checkValidity cfg@(Config libCfg _) inst@(SMTInstance {conditions, problem}) = do
-  let vars = Set.toList (Exp.variables inst)
+  let vars = Set.toList (Variable.variables inst)
   process <- new libCfg
   solver <- initSolver NoQueuing (toBackend process)
   setupSolver cfg solver
@@ -110,12 +110,12 @@ contractCondition p m = case lookupMethod m (methods p) of
 
 ftcCondition :: Program -> TraceFormula -> [SMTInstance]
 ftcCondition p phi = case main p of
-  Just s -> ftc p 1 (normalise s) (normalise phi) Set.empty Top
+  Just s -> ftc p 1 s phi Set.empty Top
   Nothing -> [invalidInstance]
 
 counterexample :: [Text] -> Text -> [(Int, Map Text Int)]
 counterexample vars raw = case parse (parseModel vars) "SMT-solver" raw of
-  Left err -> error ((show err)  ++ "\n" ++ show raw)
+  Left err -> error (show err  ++ "\n" ++ show raw)
   Right model -> Map.toAscList model
 
 initialState :: Validity -> Maybe (Map Text Int)
