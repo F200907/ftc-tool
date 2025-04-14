@@ -1,0 +1,12 @@
+"true ~ Sb_x^(10) ~ Sb_x^(x + 1)"
+(if true then
+    skip
+    else
+    skip; skip; skip);
+(if false then
+    skip
+    else
+    skip; skip; skip);
+x := 9;
+x := 10;
+x := 11
