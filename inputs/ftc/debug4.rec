@@ -1,4 +1,5 @@
-"(((true) && Id ~ Id) || ((!true) && Id ~ Id)) ~ Sb_a^(0)"
+/* this should be invalid*/
+"Id ~ Id"
 (if true then
   skip
 else

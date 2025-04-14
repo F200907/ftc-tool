@@ -63,8 +63,8 @@ import SMT.Instance (SMTInstance (SMTInstance), instanceOf)
 
 import qualified Debug.Trace as Trace
 
-trace a b = Trace.trace a b
--- trace a b = b
+-- trace a b = Trace.trace a b
+trace a b = b
 
 depth :: Statement -> Int
 depth Skip = 1
@@ -76,7 +76,7 @@ depth (Method _) = 1
 ftc :: Program -> Int -> Statement -> TraceFormula -> Set Text -> SMTFormula -> [SMTInstance]
 ftc p i0 s0 tf0 xs0 eta0 =
   let (problem, sideconds) = ftc' i0 s0 tf0 xs0 eta0
-   in instanceOf [constraints cs i0 s0] problem : sideconds
+   in Trace.trace (show [show p, show tf0]) $ instanceOf [constraints cs i0 s0] problem : sideconds
   where
     cs = contracts p
 
@@ -89,12 +89,16 @@ ftc p i0 s0 tf0 xs0 eta0 =
     -- m' _ _ _ _ _ = undefined
 
     ftc' :: Int -> Statement -> TraceFormula -> Set Text -> SMTFormula -> (SMTFormula, [SMTInstance])
+    ftc' i s mu@(Mu _ _) xs eta = ftc' i s (unfold mu) xs eta
+    ftc' i s (Chop mu@(Mu _ _) tf2) xs eta = trace "Unwind" $ ftc' i s (normalise (Chop (unfold mu) tf2)) xs eta
+    ftc' _ (Assignment _ _) (Chop _ _) _ _ = (Bot, [])
+    ftc' _ Skip (Chop _ _) _ _ = (Bot, [])
     ftc' i (Assignment _ _) phi _ eta = (predicate i phi &&& eta, [])
     ftc' i Skip phi _ eta = (predicate i phi &&& eta, [])
     ftc' i s@(Condition b s1 s2) tf@(Chop phi phi') xs eta =
       let (f1, a1) = ftc' (i + 1) s1 phi' xs (predicate i phi &&& eta)
           (f2, a2) = ftc' (i + 1) s2 phi' xs (predicate i phi &&& eta)
-       in trace ("Cond: " ++ show [show i, show s, show tf, show xs, show eta]) $ ((StatePredicate i b ==> f1) &&& (Not (StatePredicate i b) ==> f2), a1 ++ a2)
+       in trace ("Cond: " ++ show [show i, show s, show tf, show phi', show xs, show eta]) $ ((StatePredicate i b ==> f1) &&& (Not (StatePredicate i b) ==> f2), a1 ++ a2)
     ftc' i (Method m) (Chop phi mu@(Mu x _)) xs eta
       | x `Set.member` xs = (StatePredicate i (pre' m) &&& predicate i phi &&& eta, [])
       | otherwise =
@@ -104,7 +108,7 @@ ftc p i0 s0 tf0 xs0 eta0 =
               inst' = instanceOf [constraints cs 1 sm, StatePredicate 1 (pre' m)] f'
            in (StatePredicate i (pre' m) &&& predicate i phi &&& eta, inst' : a')
     ftc' i (Sequence (Assignment _ _) s') (Chop phi phi') xs eta = ftc' (i + 1) s' phi' xs (predicate i phi &&& eta)
-    ftc' i (Sequence Skip s') (Chop phi phi') xs eta = ftc' (i + 1) s' phi' xs (predicate i phi &&& eta)
+    ftc' i s@(Sequence Skip s') tf@(Chop phi phi') xs eta =  trace ("Skip: " ++ show [show i, show s, show tf, show phi', show xs, show eta]) $ ftc' (i + 1) s' phi' xs (predicate i phi &&& eta)
     ftc' i (Sequence (Condition b s1 s2) s') tf xs eta = ftc' i (Condition b (normalise (s1 # s')) (normalise (s2 # s'))) tf xs eta
     ftc' i (Sequence (Method m) s') (Chop phi (Chop mu@(Mu x _) phi')) xs eta
       | x `Set.member` xs = ftc' (i + 1) s' phi' xs (StatePredicate i (pre' m) &&& predicate i phi &&& eta)
@@ -124,9 +128,8 @@ ftc p i0 s0 tf0 xs0 eta0 =
       (f1, a1) = ftc' i s phi1 xs eta
       (f2, a2) = ftc' i s phi2 xs eta
       in trace ("Con: " ++ show [show i, show s, show tf, show xs, show eta])  (f1 &&& f2, a1 ++ a2)
-    ftc' i s mu@(Mu _ _) xs eta = ftc' i s (unfold mu) xs eta
-    ftc' i s (StateFormula sf) xs eta = (StatePredicate i sf, [])
-    ftc' i s b@(BinaryRelation _) xs eta = (predicate (i - 1) b, [])
+    -- ftc' i s (StateFormula sf) xs eta = (StatePredicate i sf, [])
+    -- ftc' i s b@(BinaryRelation _) xs eta = (predicate (i - 1) b, [])
     ftc' i s tf xs eta = trace ("Empty: " ++ show [show i, show s, show tf, show xs, show eta]) (Bot, [])
     -- ftc' _ _ _ _ _ = (error $ show Bot, [])
 

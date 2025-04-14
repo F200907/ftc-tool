@@ -16,7 +16,7 @@ class Normalisable a where
 
 instance (Normalisable TraceFormula) where
   normalise :: TraceFormula -> TraceFormula
-  normalise = normalise' . expandP
+  normalise = normalise'
     where
       normalise' = distribute . chopAssoc
 
@@ -45,7 +45,7 @@ instance (Normalisable TraceFormula) where
 instance (Normalisable Statement) where
   normalise :: Statement -> Statement
   normalise Skip = Skip
-  -- normalise (Sequence (Condition b s1 s2) s) = normalise $ Condition b (s1 # s) (s2 # s)
+  normalise (Sequence (Condition b s1 s2) s) = normalise $ Condition b (s1 # s) (s2 # s)
   normalise s@(Assignment _ _) = s
   normalise (Sequence s1 s3) = case normalise s1 of
     Sequence s1' s2' -> Sequence s1' (normalise (Sequence s2' s3))

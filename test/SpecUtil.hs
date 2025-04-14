@@ -24,7 +24,7 @@ genArthExpr =
       Expr.AVar <$> genName
     ]
     [ -- recursive generators
-      Gen.subterm genArthExpr Expr.Negation,
+      -- Gen.subterm genArthExpr Expr.Negation,
       Gen.subterm2 genArthExpr genArthExpr Expr.Plus,
       Gen.subterm2 genArthExpr genArthExpr Expr.Minus,
       Gen.subterm2 genArthExpr genArthExpr Expr.Times -- ,

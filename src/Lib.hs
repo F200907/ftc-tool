@@ -33,7 +33,7 @@ module Lib
     withDebug,
     normalise,
     depth,
-    reinforce,
+    reinforce,expandP,
     constraints,
     ftcCondition,
     Variables (..)

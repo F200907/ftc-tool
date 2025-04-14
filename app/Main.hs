@@ -125,12 +125,14 @@ verify a = do
       putStrLn' "Parsed trace formula:"
       putStrLn' tf
       
-      let normTF = normalise <$> tf
+      let normTF = normalise . expandP <$> tf
       putStrLn' "Normalised trace formula:"
       putStrLn' normTF
       let p = if reinforce a then Lib.reinforce p' else p'
       putStrLn' "Parsed program:"
       putStrLn' p
+      putStrLn' "Normalised program:"
+      putStrLn' (normalise p)
       putStrLn' ""
       mapM_
         ( \(m, _, _) ->

@@ -15,10 +15,10 @@ import SpecUtil
 
 spec :: Spec
 spec = sequential $ describe "stf" $ do
-  modifyMaxSuccess (const 50) $ modifyMaxShrinks (const 10) $ it "stf" $ hedgehog $ do
+  modifyMaxSuccess (const 100) $ modifyMaxShrinks (const 10) $ it "stf" $ hedgehog $ do
     stmt <- forAll genStmt
     let prog = Program {methods = [], main = Just stmt}
-    let stf = strongestTraceFormula prog
+    let stf = expandP $ strongestTraceFormula prog
     let inst = head (ftcCondition (normalise prog) (normalise stf))
     -- liftIO $ print $ pretty inst
     let smt = withDebug z3 False
