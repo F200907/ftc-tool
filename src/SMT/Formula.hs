@@ -1,7 +1,7 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module SMT.Formula (SMTFormula (..), (==>), (&&&), (|||), predicate) where
+module SMT.Formula (SMTFormula (..), (==>), (&&&), (|||), predicate, instantiateConstantPred) where
 
 import Data.Expression (ArithmeticExpr, BooleanExpr)
 import qualified Data.Expression as Exp
@@ -10,6 +10,7 @@ import qualified Data.Set as Set
 import Data.Text (Text)
 import Data.Trace.TraceLogic (BinaryRelation (..), TraceFormula (..), unfold)
 import Data.Variable
+import Debug.Trace (trace)
 import Prettyprinter hiding ((<+>))
 import qualified Prettyprinter as P
 import SMT.SMTUtil (SMTify (smtify, states), indexedState, smtOp, (<+>))
@@ -42,6 +43,21 @@ instance (Pretty a) => Pretty (SMTFormula a) where
   pretty (IdentityPredicate i) = parens $ "Id" <> parens (pretty i <> "," P.<+> pretty (i + 1))
   pretty (AssignmentPredicate i x a) = parens $ "Sb_" <> pretty x <> "^" <> pretty a <> parens (pretty i <> "," P.<+> pretty (i + 1))
   pretty (ConstantPred txt) = parens $ pretty txt
+
+instantiateConstantPred :: (Eq a) => SMTFormula a -> a -> Bool -> SMTFormula a
+instantiateConstantPred Top _ _ = Top
+instantiateConstantPred Bot _ _ = Bot
+instantiateConstantPred (Implies a b) k v = Implies (instantiateConstantPred a k v) (instantiateConstantPred b k v)
+instantiateConstantPred (Not a) k v = Not (instantiateConstantPred a k v)
+instantiateConstantPred (And a b) k v = And (instantiateConstantPred a k v) (instantiateConstantPred b k v)
+instantiateConstantPred (Or a b) k v = Or (instantiateConstantPred a k v) (instantiateConstantPred b k v)
+instantiateConstantPred f@(StatePredicate _ _) _ _ = f
+instantiateConstantPred f@(BinaryPredicate {}) _ _ = f
+instantiateConstantPred f@(IdentityPredicate _) _ _ = f
+instantiateConstantPred f@(AssignmentPredicate {}) _ _ = f
+instantiateConstantPred f@(ConstantPred a) key val
+  | a == key = if val then Top else Bot
+  | otherwise = f
 
 infixr 1 ==>
 
@@ -81,7 +97,7 @@ instance SMTify (SMTFormula a) where
   smtify (BinaryPredicate i j b) = smtify $ stateful b i j
   smtify (IdentityPredicate i) = smtOp ("id" <+> indexedState i <+> indexedState (i + 1))
   smtify (AssignmentPredicate i x a) = smtOp ("sb_" <> x <+> indexedState i <+> indexedState (i + 1) <+> smtify (stateful a i i))
-  smtify (ConstantPred _) = error "cannot create smt formula from uninitialised constant predicate"
+  smtify (ConstantPred _) = trace "cannot create smt formula from uninitialised constant predicate" (smtify Bot)
 
   states :: SMTFormula a -> Set Int
   states Top = Set.empty

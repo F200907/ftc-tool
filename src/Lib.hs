@@ -24,6 +24,7 @@ module Lib
     z3,
     SMTInstance,
     checkValidity,
+    checkValidityFTC,
     contractCondition,
     cvc5,
     ftc,

@@ -20,7 +20,7 @@ type RecursiveVar = Text
 
 type StateFormula = BooleanExpr
 
-data BinaryRelation = Id | Sb VariableName ArithmeticExpr | PrePostConditions StateFormula StateFormula deriving (Show)
+data BinaryRelation = Id | Sb VariableName ArithmeticExpr | PrePostConditions StateFormula StateFormula deriving (Show, Eq)
 
 data TraceFormula
   = StateFormula StateFormula
@@ -30,7 +30,7 @@ data TraceFormula
   | Disjunction TraceFormula TraceFormula
   | Chop TraceFormula TraceFormula
   | Mu RecursiveVar TraceFormula
-  deriving (Show)
+  deriving (Show, Eq)
 
 instance Pretty TraceFormula where
   pretty :: TraceFormula -> Doc ann

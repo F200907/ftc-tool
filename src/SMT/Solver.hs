@@ -1,13 +1,14 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE LambdaCase #-}
 
-module SMT.Solver (SMTInstance (..), checkValidity, cvc5, z3, contractCondition, Validity (..), initialState, withDebug, ftcCondition) where
+module SMT.Solver (SMTInstance (..), checkValidity, cvc5, z3, contractCondition, Validity (..), initialState, withDebug, ftcCondition, checkValidityFTC) where
 
 import Data.ByteString (toStrict)
 import Data.ByteString.Builder (Builder, byteString, string8)
 import qualified Data.Expression as Exp
-import Data.FTC.FiniteTraceCalculus (constraints, ftc, mc, SideCondition, FTCProblem, fromFormula)
+import Data.FTC.FiniteTraceCalculus (constraints, ftc, mc, SideCondition, FTCProblem (..), fromFormula)
 import Data.Map (Map)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -15,9 +16,10 @@ import Data.Text (Text, unpack)
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Data.Trace.Program (Program (main, methods), contract, contracts, lookupMethod)
 import Data.Trace.TraceLogic (TraceFormula (..))
+import Debug.Trace (trace)
 import Prettyprinter hiding ((<+>))
 import qualified Prettyprinter as P
-import SMT.Formula (SMTFormula (..))
+import SMT.Formula (SMTFormula (..), instantiateConstantPred)
 import SMT.Instance
 import SMT.ModelParser (parseModel)
 import SMT.SMTUtil (SMTify (smtify, states), genState, indexedState, smtOp, (<+>))
@@ -110,6 +112,16 @@ contractCondition p m = case lookupMethod m (methods p) of
 
 ftcCondition :: Program -> TraceFormula -> FTCProblem SideCondition
 ftcCondition = ftc
+
+checkValidityFTC :: (Eq a, Show a) => Config' -> FTCProblem a -> IO Validity
+checkValidityFTC cfg x@(FTCProblem {dependencies, inst}) = case dependencies of
+  [] -> checkValidity cfg inst
+  ((a, p):deps) -> do
+    validity <- checkValidityFTC cfg p
+    let val = (\case {Valid -> True; Counterexample _ -> False}) validity
+    let (conds, prob) = (conditions inst, problem inst)
+    let sub x = instantiateConstantPred x a val
+    checkValidityFTC cfg (FTCProblem deps (SMTInstance (map sub conds) (sub prob)))
 
 counterexample :: [Text] -> Text -> [(Int, Map Text Int)]
 counterexample vars raw = case parse (parseModel vars) "SMT-solver" raw of
