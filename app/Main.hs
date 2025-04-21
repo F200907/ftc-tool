@@ -155,19 +155,17 @@ verify a = do
                   putStrLn ""
         )
         (methods p)
-      case (Lib.main p) of
-        Just s -> putStrLn' (depth s)
       ( case normTF of
-          Just tf' ->
-            mapM_
-              ( \inst ->
-                  let smt = withDebug z3 (debug a)
-                   in do
-                        putStrLn' "Checking SMT problem:"
-                        putStrLn' inst
-                        valid <- checkValidity smt inst
-                        putStrLn' valid
-              )
+          Just tf' -> print
+            -- mapM_
+            --   ( \inst ->
+            --       let smt = withDebug z3 (debug a)
+            --        in do
+            --             putStrLn' "Checking SMT problem:"
+            --             putStrLn' inst
+            --             valid <- checkValidity smt inst
+            --             putStrLn' valid
+            --   )
               (ftcCondition (normalise p) tf')
           Nothing -> return ()
         )

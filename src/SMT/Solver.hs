@@ -7,7 +7,7 @@ module SMT.Solver (SMTInstance (..), checkValidity, cvc5, z3, contractCondition,
 import Data.ByteString (toStrict)
 import Data.ByteString.Builder (Builder, byteString, string8)
 import qualified Data.Expression as Exp
-import Data.FTC.FiniteTraceCalculus (constraints, ftc, mc)
+import Data.FTC.FiniteTraceCalculus (constraints, ftc, mc, SideCondition, FTCProblem, fromFormula)
 import Data.Map (Map)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -52,7 +52,7 @@ cvc5 = Config (SMTLIB.Config {std_err = CreatePipe, exe = "cvc5", args = []}) Fa
 text2Builder :: Text -> Builder
 text2Builder = byteString . encodeUtf8
 
-assert :: Config' -> Solver -> SMTFormula -> IO ()
+assert :: Config' -> Solver -> SMTFormula a -> IO ()
 assert cfg solver formula =
   let cmd = smtOp ("assert" <+> smtify formula)
    in do
@@ -73,7 +73,7 @@ setupSolver cfg solver = do
   command_ solver "(set-logic ALL)"
   command_ solver "(set-option :produce-unsat-cores true) ; enable generation of unsat cores"
 
-checkValidity :: Config' -> SMTInstance -> IO Validity
+checkValidity :: Config' -> SMTInstance a -> IO Validity
 checkValidity cfg@(Config libCfg _) inst@(SMTInstance {conditions, problem}) = do
   let vars = Set.toList (Variable.variables inst)
   process <- new libCfg
@@ -99,7 +99,7 @@ checkValidity cfg@(Config libCfg _) inst@(SMTInstance {conditions, problem}) = d
         )
     )
 
-contractCondition :: Program -> Text -> SMTInstance
+contractCondition :: Program -> Text -> SMTInstance a
 contractCondition p m = case lookupMethod m (methods p) of
   Just s -> case contract m (methods p) of
     Just (pre, post) ->
@@ -108,10 +108,8 @@ contractCondition p m = case lookupMethod m (methods p) of
     _ -> invalidInstance
   _ -> invalidInstance
 
-ftcCondition :: Program -> TraceFormula -> [SMTInstance]
-ftcCondition p phi = case main p of
-  Just s -> ftc p 1 s phi Set.empty Top
-  Nothing -> [invalidInstance]
+ftcCondition :: Program -> TraceFormula -> FTCProblem SideCondition
+ftcCondition = ftc
 
 counterexample :: [Text] -> Text -> [(Int, Map Text Int)]
 counterexample vars raw = case parse (parseModel vars) "SMT-solver" raw of

@@ -6,8 +6,8 @@ module Data.Trace.Normalise (Normalisable (..)) where
 
 -- import Data.Text ()
 
-import Data.Trace.Program (Program (..), Statement (..), (#))
-import Data.Trace.TraceLogic (TraceFormula (..), expandP)
+import Data.Trace.Program (Program (..), Statement (..))
+import Data.Trace.TraceLogic (TraceFormula (..))
 
 class Normalisable a where
   -- |
@@ -16,24 +16,22 @@ class Normalisable a where
 
 instance (Normalisable TraceFormula) where
   normalise :: TraceFormula -> TraceFormula
-  normalise = normalise'
+  normalise = distribute . assoc
     where
-      normalise' = distribute . chopAssoc
-
-      chopAssoc :: TraceFormula -> TraceFormula
-      chopAssoc tf@(StateFormula _) = tf
-      chopAssoc tf@(BinaryRelation _) = tf
-      chopAssoc tf@(RecursiveVariable _) = tf
-      chopAssoc (Conjunction tf1 tf2) = Conjunction (chopAssoc tf1) (chopAssoc tf2)
-      chopAssoc (Disjunction tf1 tf2) = Disjunction (chopAssoc tf1) (chopAssoc tf2)
-      chopAssoc (Chop tf1 tf3) = case chopAssoc tf1 of
-        Chop tf1' tf2' -> Chop tf1' (chopAssoc (Chop tf2' tf3))
-        tf1' -> Chop tf1' (chopAssoc tf3)
-      chopAssoc (Mu x tf') = Mu x (chopAssoc tf')
+      assoc :: TraceFormula -> TraceFormula
+      assoc tf@(StateFormula _) = tf
+      assoc tf@(BinaryRelation _) = tf
+      assoc tf@(RecursiveVariable _) = tf
+      assoc (Conjunction tf1 tf2) = Conjunction (assoc tf1) (assoc tf2)
+      assoc (Disjunction tf1 tf2) = Disjunction (assoc tf1) (assoc tf2)
+      assoc (Chop tf1 tf3) = case assoc tf1 of
+        Chop tf1' tf2' -> Chop tf1' (assoc (Chop tf2' tf3))
+        tf1' -> Chop tf1' (assoc tf3)
+      assoc (Mu x tf') = Mu x (assoc tf')
 
       distribute :: TraceFormula -> TraceFormula
-      distribute (Chop (Disjunction tf1 tf2) tf3) = normalise' (Disjunction (Chop tf1 tf3) (Chop tf2 tf3))
-      distribute (Chop (Conjunction tf1 tf2) tf3) = normalise' (Conjunction (Chop tf1 tf3) (Chop tf2 tf3))
+      distribute (Chop (Disjunction tf1 tf2) tf3) = normalise (Disjunction (Chop tf1 tf3) (Chop tf2 tf3))
+      distribute (Chop (Conjunction tf1 tf2) tf3) = normalise (Conjunction (Chop tf1 tf3) (Chop tf2 tf3))
       distribute (Chop tf1 tf2) = Chop tf1 (distribute tf2)
       distribute tf@(StateFormula _) = tf
       distribute tf@(BinaryRelation _) = tf
@@ -44,23 +42,32 @@ instance (Normalisable TraceFormula) where
 
 instance (Normalisable Statement) where
   normalise :: Statement -> Statement
-  normalise Skip = Skip
-  normalise (Sequence (Condition b s1 s2) s) = normalise $ Condition b (s1 # s) (s2 # s)
-  normalise s@(Assignment _ _) = s
-  normalise (Sequence s1 s3) = case normalise s1 of
-    Sequence s1' s2' -> Sequence s1' (normalise (Sequence s2' s3))
-    s1' -> Sequence s1' (normalise s3)
-  normalise (Condition b s1 s2) = Condition b (normalise s1) (normalise s2)
-  normalise s@(Method _) = s
+  normalise = distribute . assoc
+    where
+    assoc :: Statement -> Statement
+    assoc Skip = Skip
+    assoc s@(Assignment {}) = s
+    assoc s@(Method {}) = s
+    assoc (Condition b s1 s2) = Condition b (assoc s1) (assoc s2)
+    assoc (Sequence s s') = case assoc s of
+      Sequence s1 s2 -> Sequence s1 (assoc (Sequence s2 s'))
+      _ -> Sequence s (assoc s')
+
+    distribute :: Statement -> Statement
+    distribute Skip = Skip
+    distribute s@(Assignment {}) = s
+    distribute s@(Method {}) = s
+    distribute (Condition b s1 s2) = Condition b (distribute s1) (distribute s2)
+    distribute (Sequence s s') = case s of
+      Condition b s1 s2 -> Condition b (normalise (Sequence s1 s')) (normalise (Sequence s2 s'))
+      _ -> Sequence (distribute s) (distribute s')
 
 instance (Normalisable Program) where
   normalise :: Program -> Program
   normalise (Program xs m) =
     Program
       (map (\(m', c, s) -> (m', c, normalise s)) xs)
-      ( do
-          normalise <$> m
-      )
+      (normalise <$> m)
 
 -- allChops 0 = [RecursiveVariable "x"]
 -- allChops n =

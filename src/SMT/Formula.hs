@@ -3,33 +3,34 @@
 
 module SMT.Formula (SMTFormula (..), (==>), (&&&), (|||), predicate) where
 
-import Data.Expression (ArithmeticExpr, BooleanExpr, VariableName)
+import Data.Expression (ArithmeticExpr, BooleanExpr)
 import qualified Data.Expression as Exp
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Text (Text)
+import Data.Trace.TraceLogic (BinaryRelation (..), TraceFormula (..), unfold)
+import Data.Variable
 import Prettyprinter hiding ((<+>))
 import qualified Prettyprinter as P
 import SMT.SMTUtil (SMTify (smtify, states), indexedState, smtOp, (<+>))
 import Util.PrettyUtil (bot, implies, land, lnot, lor, top)
-import Data.Trace.TraceLogic (TraceFormula (..), BinaryRelation (..), unfold)
-import Data.Variable
 
-data SMTFormula
+data SMTFormula a
   = Top
   | Bot
-  | Implies SMTFormula SMTFormula
-  | Not SMTFormula
-  | And SMTFormula SMTFormula
-  | Or SMTFormula SMTFormula
+  | Implies (SMTFormula a) (SMTFormula a)
+  | Not (SMTFormula a)
+  | And (SMTFormula a) (SMTFormula a)
+  | Or (SMTFormula a) (SMTFormula a)
   | StatePredicate Int BooleanExpr
   | BinaryPredicate Int Int BooleanExpr
   | IdentityPredicate Int
   | AssignmentPredicate Int VariableName ArithmeticExpr
-  deriving (Show)
+  | ConstantPred a
+  deriving (Show, Eq)
 
-instance Pretty SMTFormula where
-  pretty :: SMTFormula -> Doc ann
+instance (Pretty a) => Pretty (SMTFormula a) where
+  pretty :: SMTFormula a -> Doc ann
   pretty Top = top
   pretty Bot = bot
   pretty (Implies a b) = parens $ pretty a P.<+> implies P.<+> pretty b
@@ -40,23 +41,24 @@ instance Pretty SMTFormula where
   pretty (BinaryPredicate i j b) = parens $ pretty b <> parens (pretty i <> "," P.<+> pretty j)
   pretty (IdentityPredicate i) = parens $ "Id" <> parens (pretty i <> "," P.<+> pretty (i + 1))
   pretty (AssignmentPredicate i x a) = parens $ "Sb_" <> pretty x <> "^" <> pretty a <> parens (pretty i <> "," P.<+> pretty (i + 1))
+  pretty (ConstantPred txt) = parens $ pretty txt
 
 infixr 1 ==>
 
-(==>) :: SMTFormula -> SMTFormula -> SMTFormula
+(==>) :: SMTFormula a -> SMTFormula a -> SMTFormula a
 (==>) a b = a `Implies` b
 
 infixr 2 &&&
 
-(&&&) :: SMTFormula -> SMTFormula -> SMTFormula
+(&&&) :: SMTFormula a -> SMTFormula a -> SMTFormula a
 (&&&) a b = a `And` b
 
 infixr 2 |||
 
-(|||) :: SMTFormula -> SMTFormula -> SMTFormula
+(|||) :: SMTFormula a -> SMTFormula a -> SMTFormula a
 (|||) a b = a `Or` b
 
-predicate :: Int -> TraceFormula -> SMTFormula
+predicate :: Int -> TraceFormula -> SMTFormula a
 predicate i (StateFormula s) = StatePredicate i s
 predicate i (BinaryRelation Id) = IdentityPredicate i
 predicate i (BinaryRelation (Sb x a)) = AssignmentPredicate i x a
@@ -67,8 +69,8 @@ predicate i (Disjunction t1 t2) = Or (predicate i t1) (predicate i t2)
 predicate _ (Chop _ _) = Bot
 predicate i m@(Mu _ _) = predicate i (unfold m)
 
-instance SMTify SMTFormula where
-  smtify :: SMTFormula -> Text
+instance SMTify (SMTFormula a) where
+  smtify :: SMTFormula a -> Text
   smtify (Top) = "true"
   smtify (Bot) = "false"
   smtify (Implies a b) = smtOp ("=>" <+> smtify a <+> smtify b)
@@ -79,8 +81,9 @@ instance SMTify SMTFormula where
   smtify (BinaryPredicate i j b) = smtify $ stateful b i j
   smtify (IdentityPredicate i) = smtOp ("id" <+> indexedState i <+> indexedState (i + 1))
   smtify (AssignmentPredicate i x a) = smtOp ("sb_" <> x <+> indexedState i <+> indexedState (i + 1) <+> smtify (stateful a i i))
+  smtify (ConstantPred _) = error "cannot create smt formula from uninitialised constant predicate"
 
-  states :: SMTFormula -> Set Int
+  states :: SMTFormula a -> Set Int
   states Top = Set.empty
   states Bot = Set.empty
   states (Implies a b) = states a `Set.union` states b
@@ -91,9 +94,10 @@ instance SMTify SMTFormula where
   states (BinaryPredicate i j _) = Set.fromList [i, j]
   states (IdentityPredicate i) = Set.fromList [i, i + 1]
   states (AssignmentPredicate i _ _) = Set.fromList [i, i + 1]
+  states (ConstantPred _) = Set.empty
 
-instance Variables SMTFormula where
-  variables :: SMTFormula -> Set Text
+instance Variables (SMTFormula a) where
+  variables :: SMTFormula a -> Set Text
   variables Top = Set.empty
   variables Bot = Set.empty
   variables (Implies a b) = variables a `Set.union` variables b
@@ -104,6 +108,7 @@ instance Variables SMTFormula where
   variables (BinaryPredicate _ _ b) = variables b
   variables (IdentityPredicate _) = Set.empty
   variables (AssignmentPredicate _ x a) = Set.insert x (variables a)
+  variables (ConstantPred _) = Set.empty
 
 class Stateful a where
   stateful :: a -> Int -> Int -> a

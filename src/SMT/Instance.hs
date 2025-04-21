@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 
-module SMT.Instance (SMTInstance (..), invalidInstance, instanceOf) where
+module SMT.Instance (SMTInstance (..), invalidInstance, instanceOf, constantPredicates) where
 
 import Data.Set (Set)
 import Data.Text (Text)
@@ -12,22 +12,37 @@ import SMT.Formula (SMTFormula (..))
 import qualified Data.Set as Set
 import Data.Variable
 
-data SMTInstance = SMTInstance {conditions :: [SMTFormula], problem :: SMTFormula} deriving (Show)
+data SMTInstance a = SMTInstance {conditions :: [SMTFormula a], problem :: SMTFormula a} deriving (Show, Eq)
 
-instance (Pretty SMTInstance) where
-  pretty :: SMTInstance -> Doc ann
+instance Pretty a => Pretty (SMTInstance a) where
+  pretty :: SMTInstance a-> Doc ann
   pretty (SMTInstance {conditions, problem}) =
     (if null conditions then "" else "Conditions:" <> line <> vsep (map pretty conditions) <> line)
       <> "Problem:"
       <> line
       <> pretty problem
 
-invalidInstance :: SMTInstance
+invalidInstance :: SMTInstance a
 invalidInstance = SMTInstance {conditions = [], problem = Bot}
 
-instance (Variables SMTInstance) where
-  variables :: SMTInstance -> Set Text
+instance Variables (SMTInstance a) where
+  variables :: SMTInstance a-> Set Text
   variables (SMTInstance {conditions, problem}) = foldl (\acc smt -> acc `Set.union` variables smt) (variables problem) conditions
 
-instanceOf :: [SMTFormula] -> SMTFormula -> SMTInstance
+constantPredicates :: SMTInstance a -> [a]
+constantPredicates (SMTInstance {conditions, problem}) = concatMap constantPredicates' (problem : conditions)
+  where
+    constantPredicates' Top = []
+    constantPredicates' Bot = []
+    constantPredicates' (Implies a b) = concatMap constantPredicates' [a, b]
+    constantPredicates' (Not a) = constantPredicates' a
+    constantPredicates' (And a b) = concatMap constantPredicates' [a, b]
+    constantPredicates' (Or a b) = concatMap constantPredicates' [a, b]
+    constantPredicates' (StatePredicate _ _) = []
+    constantPredicates' (BinaryPredicate {}) = []
+    constantPredicates' (IdentityPredicate _) = []
+    constantPredicates' (AssignmentPredicate {}) = []
+    constantPredicates' (ConstantPred t) = [t]
+
+instanceOf :: [SMTFormula a] -> SMTFormula a -> SMTInstance a
 instanceOf conditions problem = SMTInstance {conditions = conditions, problem = problem}

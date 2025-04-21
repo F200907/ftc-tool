@@ -8,7 +8,7 @@ import Test.Hspec.Hedgehog (forAll, hedgehog, modifyMaxShrinks, modifyMaxSuccess
 import Data.Trace.TraceLogic (TraceFormula(..))
 
 spec :: Spec
-spec = describe "normalise" $ modifyMaxSuccess (const 50) $ modifyMaxShrinks (const 100) $ do
+spec = describe "normalise" $ modifyMaxSuccess (const 150) $ modifyMaxShrinks (const 100) $ do
   it "statements" $ hedgehog $ do
     stmt <- normalise <$> forAll genStmt
     normalisedStmt stmt === True
@@ -20,6 +20,7 @@ spec = describe "normalise" $ modifyMaxSuccess (const 50) $ modifyMaxShrinks (co
 normalisedStmt :: Statement -> Bool
 normalisedStmt Skip = True
 normalisedStmt (Assignment _ _) = True
+normalisedStmt (Sequence (Condition {}) _) = False
 normalisedStmt (Condition _ s1 s2) = normalisedStmt s1 && normalisedStmt s2
 normalisedStmt (Sequence s1 s2) = case s1 of
   Sequence _ _ -> False

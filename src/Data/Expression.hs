@@ -32,7 +32,7 @@ data ArithmeticExpr
   | Minus ArithmeticExpr ArithmeticExpr
   | Times ArithmeticExpr ArithmeticExpr
   | Modulo ArithmeticExpr ArithmeticExpr
-  deriving (Show)
+  deriving (Show, Eq)
 
 instance Pretty ArithmeticExpr where
   pretty :: ArithmeticExpr -> Doc ann
@@ -57,7 +57,7 @@ data BooleanExpr
   | Or BooleanExpr BooleanExpr
   | Equal ArithmeticExpr ArithmeticExpr
   | LessThan ArithmeticExpr ArithmeticExpr
-  deriving (Show)
+  deriving (Show, Eq)
 
 instance Pretty BooleanExpr where
   pretty :: BooleanExpr -> Doc ann
