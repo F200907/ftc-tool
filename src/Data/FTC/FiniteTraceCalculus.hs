@@ -82,19 +82,19 @@ ftc p tf0 = case main p of
           let sm = fromMaybe (error "procedure not defined") (methodBody p m)
               mu' = unfold mu
               f' = addCondition (addCondition (ftc' 1 sm mu' (Set.insert x xs) Top) (constraints cs 1 sm)) (StatePredicate 1 (pre' m))
-           in injectDep (fromFormula tf) (m, mu) f'
+           in injectDep (fromFormula $ ConstantPred (m, mu) &&& tf) (m, mu) f'
       where
-        tf = ConstantPred (m, mu) &&& StatePredicate i (pre' m) &&& predicate i phi &&& eta
+        tf = StatePredicate (i + 1) (pre' m) &&& predicate i phi &&& eta
     --
     ftc' i (Sequence (Assignment _ _) s2) (Chop tf1 tf2) xs eta = ftc' (i + 1) s2 tf2 xs (predicate i tf1 &&& eta)
     ftc' i (Sequence Skip s2) (Chop tf1 tf2) xs eta = ftc' (i + 1) s2 tf2 xs (predicate i tf1 &&& eta)
     ftc' i (Sequence (Method m) s2) (Chop tf1 (Chop mu@(Mu x _) tf2)) xs eta
-      | x `Set.member` xs = ftc' (i + 1) s2 tf2 xs (ConstantPred (m, mu) &&& StatePredicate i (pre' m) &&& predicate i tf1 &&& eta)
+      | x `Set.member` xs = ftc' (i + 2) s2 tf2 xs (StatePredicate (i + 1) (pre' m) &&& predicate i tf1 &&& eta)
       | otherwise =
           let sm = fromMaybe (error "procedure not defined") (methodBody p m)
               mu' = unfold mu
               f' = addCondition (addCondition (ftc' 1 sm mu' (Set.insert x xs) Top) (constraints cs 1 sm)) (StatePredicate 1 (pre' m))
-           in injectDep (ftc' (i + 1) s2 tf2 xs (ConstantPred (m, mu) &&& StatePredicate i (pre' m) &&& predicate i tf1 &&& eta)) (m, mu) f'
+           in injectDep (ftc' (i + 2) s2 tf2 xs (ConstantPred (m, mu) &&& StatePredicate (i + 1) (pre' m) &&& predicate i tf1 &&& eta)) (m, mu) f'
     ftc' _ _ _ _ _ = fromFormula Bot
 
 ftc'' :: Program -> Int -> Statement -> TraceFormula -> Set Text -> SMTFormula SideCondition -> [SMTInstance SideCondition]
@@ -195,16 +195,16 @@ constraints cs = constraints'
     condition i b = predicate i (StateFormula b)
     contractImpl i m =
       let (pre, post) = fromMaybe (error "FIXME: no contract found for a procedure") (lookupContract m cs)
-       in (StatePredicate i pre ==> BinaryPredicate i (i + 1) post)
+       in (StatePredicate (i + 1) pre ==> BinaryPredicate (i + 1) (i + 2) post)
 
     constraints' i (Assignment x a) = AssignmentPredicate i x a
     constraints' i Skip = IdentityPredicate i
     constraints' i (Condition b s1 s2) = IdentityPredicate i &&& (condition i b ==> constraints' (i + 1) s1) &&& (Not (condition i b) ==> constraints' (i + 1) s2)
-    constraints' i (Method m) = contractImpl i m
+    constraints' i (Method m) = contractImpl i m &&& IdentityPredicate i
     constraints' i (Sequence (Assignment x a) s') = AssignmentPredicate i x a &&& constraints' (i + 1) s'
     constraints' i (Sequence Skip s') = IdentityPredicate i &&& constraints' (i + 1) s'
     constraints' i (Sequence (Condition b s1 s2) s') = IdentityPredicate i &&& (condition i b ==> constraints' (i + 1) (s1 # s')) &&& (Not (condition i b) ==> constraints' (i + 1) (s2 # s'))
-    constraints' i (Sequence (Method m) s') = contractImpl i m &&& constraints' (i + 1) s'
+    constraints' i (Sequence (Method m) s') = contractImpl i m &&& IdentityPredicate i &&& constraints' (i + 2) s'
     constraints' i (Sequence (Sequence s1 s2) s3) = constraints' i (s1 # (s2 # s3))
 
 -- recursive definition below

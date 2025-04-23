@@ -8,6 +8,7 @@ module Data.Trace.Normalise (Normalisable (..)) where
 
 import Data.Trace.Program (Program (..), Statement (..))
 import Data.Trace.TraceLogic (TraceFormula (..))
+import Debug.Trace (trace)
 
 class Normalisable a where
   -- |
@@ -32,7 +33,7 @@ instance (Normalisable TraceFormula) where
       distribute :: TraceFormula -> TraceFormula
       distribute (Chop (Disjunction tf1 tf2) tf3) = normalise (Disjunction (Chop tf1 tf3) (Chop tf2 tf3))
       distribute (Chop (Conjunction tf1 tf2) tf3) = normalise (Conjunction (Chop tf1 tf3) (Chop tf2 tf3))
-      distribute (Chop tf1 tf2) = Chop tf1 (distribute tf2)
+      distribute (Chop tf1 tf2) = Chop (distribute tf1) (distribute tf2)
       distribute tf@(StateFormula _) = tf
       distribute tf@(BinaryRelation _) = tf
       distribute tf@(RecursiveVariable _) = tf

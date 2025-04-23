@@ -1,7 +1,7 @@
-"(true) ~ (\X_m.(Sb_x^(1) ~ (true) ~ Id ~ (\X_n. Id))) ~ (x = 2 & y = 0)"
+"(true) ~ (\X_m.((true) ~ (\X_n. Id))) ~ (false)"
 
 [true]
-[#x = x]
+[#x = x & (#y = y)]
 n {
     skip
 }

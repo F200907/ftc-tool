@@ -158,6 +158,7 @@ verify a = do
       ( case normTF of
           Just tf' -> do
             let ftc = (ftcCondition (normalise p) tf')
+            -- print ftc
             valid <- checkValidityFTC (withDebug z3 (debug a)) ftc
             putStrLn' valid
             -- mapM_

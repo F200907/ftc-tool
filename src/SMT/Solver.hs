@@ -114,13 +114,16 @@ ftcCondition :: Program -> TraceFormula -> FTCProblem SideCondition
 ftcCondition = ftc
 
 checkValidityFTC :: (Eq a, Show a) => Config' -> FTCProblem a -> IO Validity
-checkValidityFTC cfg x@(FTCProblem {dependencies, inst}) = case dependencies of
+checkValidityFTC cfg (FTCProblem {dependencies, inst}) = case dependencies of
   [] -> checkValidity cfg inst
   ((a, p):deps) -> do
     validity <- checkValidityFTC cfg p
     let val = (\case {Valid -> True; Counterexample _ -> False}) validity
     let (conds, prob) = (conditions inst, problem inst)
     let sub x = instantiateConstantPred x a val
+    -- print a
+    -- print val
+    -- print prob
     checkValidityFTC cfg (FTCProblem deps (SMTInstance (map sub conds) (sub prob)))
 
 counterexample :: [Text] -> Text -> [(Int, Map Text Int)]
