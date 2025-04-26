@@ -38,8 +38,8 @@ combine op a b = FTCProblem (dependencies a ++ dependencies b) (SMTInstance [] (
 
 type SideCondition = (Text, TraceFormula)
 
--- trace a b = Trace.trace a b
-trace _ b = b
+trace a b = Trace.trace a b
+-- trace _ b = b
 
 depth :: Statement -> Int
 depth Skip = 1
@@ -69,8 +69,8 @@ ftc p tf0 = case main p of
     ftc' i (Assignment _ _) phi _ eta = fromFormula $ predicate i phi &&& eta
     ftc' i Skip phi _ eta = fromFormula $ predicate i phi &&& eta
     ftc' i (Condition b s1 s2) (Chop tf1 tf2) xs eta =
-      let f1 = ftc' i s1 tf1 xs (predicate i tf1 &&& eta)
-          f2 = ftc' i s2 tf1 xs (predicate i tf1 &&& eta)
+      let f1 = ftc' (i + 1) s1 tf2 xs (predicate i tf1 &&& eta)
+          f2 = ftc' (i + 1) s2 tf2 xs (predicate i tf1 &&& eta)
           deps1 = dependencies f1
           deps2 = dependencies f2
           prob1 = problem (inst f1)
