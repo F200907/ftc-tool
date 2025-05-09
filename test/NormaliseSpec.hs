@@ -43,7 +43,10 @@ normalisedTF (Chop t1 t2) = case t1 of
   Chop _ _ -> False
   Disjunction _ _ -> False
   Conjunction _ _ -> False
-  _ -> normalisedTF t1 && normalisedTF t2
+  _ -> case t2 of
+    Disjunction _ _ -> False
+    Conjunction _ _ -> False
+    _ -> normalisedTF t1 && normalisedTF t2
 normalisedTF (Disjunction t1 t2) = normalisedTF t1 && normalisedTF t2
 normalisedTF (Mu _ t) = normalisedTF t
 normalisedTF _ = True

@@ -1,0 +1,22 @@
+"(x < 0) || (true) ~ ((z = y * y) && Sb_x^(z + z)) ~ Sb_y^(0)"
+
+[y >= 0 & x >= 0]
+[x = 0 & y = #y & z = y * #x + #z]
+m {
+    if x = 0 then
+        skip
+    else
+        z := z + y;
+        x := x - 1;
+        m()
+}
+
+if x < 0 then
+    skip
+else
+    y := x;
+    z := 0;
+    m();
+    x := 2 * z;
+    y := 0
+

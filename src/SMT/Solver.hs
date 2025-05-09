@@ -91,15 +91,18 @@ checkValidity cfg@(Config libCfg _) inst@(SMTInstance {conditions, problem}) = d
   printDebug' cfg p
   command_ solver $ text2Builder p
   s <- command solver "(check-sat)"
-  let invalid = decodeUtf8 (toStrict s) == "sat"
-  ( if not invalid
-      then return Valid
-      else
-        ( do
+  let invalid = decodeUtf8 (toStrict s)
+  printDebug' cfg invalid
+  case invalid of
+    "sat" -> ( do
             model <- decodeUtf8 . toStrict <$> command solver "(get-model)"
             return $ Counterexample (counterexample vars model)
         )
-    )
+    "success" -> return $ Counterexample [(-1, Map.fromList [("empty state", 0)])]
+    "unsat" -> return Valid
+    _ -> do
+      printDebug' cfg "something went wrong with the smt-solver"
+      return $ Counterexample []
 
 contractCondition :: Program -> Text -> SMTInstance a
 contractCondition p m = case lookupMethod m (methods p) of

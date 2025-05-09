@@ -67,7 +67,7 @@ ftc p tf0 = case main p of
     ftc' i s (Conjunction tf1 tf2) xs eta = combine And (ftc' i s tf1 xs eta) (ftc' i s tf2 xs eta)
     --
     ftc' i (Assignment _ _) phi _ eta = fromFormula $ predicate i phi &&& eta
-    ftc' i Skip phi _ eta = fromFormula $ predicate i phi &&& eta
+    ftc' i Skip phi _ eta = trace (show phi) $ fromFormula $ predicate i phi &&& eta
     ftc' i (Condition b s1 s2) (Chop tf1 tf2) xs eta =
       let f1 = ftc' (i + 1) s1 tf2 xs (predicate i tf1 &&& eta)
           f2 = ftc' (i + 1) s2 tf2 xs (predicate i tf1 &&& eta)

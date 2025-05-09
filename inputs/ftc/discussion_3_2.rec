@@ -1,0 +1,19 @@
+"(true)~Sb_y^(0)"
+
+skip
+
+/*
+"(true) ~ Sb_x^(10) ~ (true)"
+
+[x >= 0]
+[x = 0]
+m{
+    if x > 0 then
+        x := x - 1;
+        m()
+    else
+        skip
+}
+
+x := 20;
+m()*/

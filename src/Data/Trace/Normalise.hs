@@ -17,7 +17,8 @@ class Normalisable a where
 
 instance (Normalisable TraceFormula) where
   normalise :: TraceFormula -> TraceFormula
-  normalise = distribute . assoc
+  normalise x = let y = (distribute . assoc) x in
+    if x == y then x else normalise y
     where
       assoc :: TraceFormula -> TraceFormula
       assoc tf@(StateFormula _) = tf
@@ -31,8 +32,10 @@ instance (Normalisable TraceFormula) where
       assoc (Mu x tf') = Mu x (assoc tf')
 
       distribute :: TraceFormula -> TraceFormula
-      distribute (Chop (Disjunction tf1 tf2) tf3) = normalise (Disjunction (Chop tf1 tf3) (Chop tf2 tf3))
-      distribute (Chop (Conjunction tf1 tf2) tf3) = normalise (Conjunction (Chop tf1 tf3) (Chop tf2 tf3))
+      distribute (Chop (Disjunction tf1 tf2) tf3) = Disjunction (Chop tf1 tf3) (Chop tf2 tf3)
+      distribute (Chop (Conjunction tf1 tf2) tf3) = Conjunction (Chop tf1 tf3) (Chop tf2 tf3)
+      distribute (Chop tf1 (Disjunction tf2 tf3)) = Disjunction (Chop tf1 tf2) (Chop tf1 tf3)
+      distribute (Chop tf1 (Conjunction tf2 tf3)) = Conjunction (Chop tf1 tf2) (Chop tf1 tf3)
       distribute (Chop tf1 tf2) = Chop (distribute tf1) (distribute tf2)
       distribute tf@(StateFormula _) = tf
       distribute tf@(BinaryRelation _) = tf
