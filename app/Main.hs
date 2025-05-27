@@ -19,8 +19,8 @@ data Mode = Verify | Parse | STF deriving (Show)
 
 data Args = Args
   { input :: Maybe String,
-    output :: Maybe String,
-    mode :: Mode,
+    -- output :: Maybe String,
+    -- mode :: Mode,
     pretty :: Bool,
     debug :: Bool,
     reinforce :: Bool
@@ -94,7 +94,7 @@ argReinforce =
     )
 
 args :: Parser Args
-args = Args <$> argInput <*> argOutput <*> argMode <*> argHumanRedable <*> argDebug <*> argReinforce
+args = Args <$> argInput <*> argHumanRedable <*> argDebug <*> argReinforce
 
 main :: IO ()
 main = entry =<< execParser opts
@@ -108,9 +108,7 @@ main = entry =<< execParser opts
         )
 
 entry :: Args -> IO ()
-entry a = case mode a of
-  Verify -> verify a
-  _ -> print a
+entry = verify
 
 source :: Args -> IO String
 source a = maybe getContents readFile (input a)
