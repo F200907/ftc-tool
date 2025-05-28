@@ -86,7 +86,7 @@ S
 ```
 
 The input's syntax is defined below in BNF-grammars with `x` being variable identifiers, `n` natural numbers, and `r` recursion variable identifiers.
-Legal variable identifiers are strings starting in a letter followed by arbitrarly many alpha-numeric characters.
+Legal variable identifiers are strings starting in a letter followed by arbitrarily many alpha-numeric characters.
 
 **Arithmetic expressions:**
 
@@ -125,7 +125,7 @@ Recursion variables are always prefixed by `X_` to distinguish them from state p
 s ::= skip | x := a | s; s | if b then s else s | m()
 ```
 
-The if-then-else statement has a low precendence, therefore the input string `if b then s1 else s2; s3` is parsed as `if b then (s1) else (s2; s3)`.
+The if-then-else statement has a low precedence, therefore the input string `if b then s1 else s2; s3` is parsed as `if b then (s1) else (s2; s3)`.
 To obtain the complementary parsing result, the input should be `(if b then s1 else s2); s3`.
 
 ### Output
