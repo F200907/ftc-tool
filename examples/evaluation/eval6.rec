@@ -1,1 +1,20 @@
- 
+"(x = x & y = y)"
+
+[x >= 0 & y >= 0]
+[x <= #x & y <= #y & (#y > 0 => x <= #y) & (#x > 0 => y <= #x)]
+gcd {
+    if x = y | x = 0 | y = 0 then
+        skip
+    else
+        (if x <= y then
+            y := y - x;
+            gcd()
+        else
+            x := x - y;
+            gcd())
+}
+
+if x < 0 | y < 0 then
+    skip
+else
+    gcd()

@@ -1,14 +1,29 @@
-"Id ~ (\X_m.(Id ~ (Sb_x^(0) || Sb_x^(x - 1) ~ Id ~ X_m))) ~ (x = 0)"
+"(true)"
 
 [true]
-[x = 0]
-m {
-    if x <= 0 then
-        x := 0
+[true]
+divide {
+    if y <= x then
+        z := z + 1;
+        x := x - y;
+        divide()
     else
-        x := x - 1;
-        m()
+        skip
 }
 
-m();
-skip
+[true]
+[true]
+triangular {
+    if x = 0 then
+        skip
+    else
+        y := y + x;
+        x := x - 1;
+        triangular()
+}
+
+z := 0;
+divide();
+x := z;
+y := 0;
+triangular()

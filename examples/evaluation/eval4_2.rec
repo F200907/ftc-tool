@@ -1,4 +1,4 @@
-"(true) ~ (true) ~ (true) ~ (x = 0 & y = 0)"
+"(true) ~ (true) ~ (x = 0 & y = 0)"
 
 [x >= 0]
 [x = 0 & y = #y & z = #z]
