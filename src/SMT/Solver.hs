@@ -1,14 +1,14 @@
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE LambdaCase #-}
 
 module SMT.Solver (SMTInstance (..), checkValidity, cvc5, z3, contractCondition, Validity (..), initialState, withDebug, ftcCondition, checkValidityFTC) where
 
 import Data.ByteString (toStrict)
 import Data.ByteString.Builder (Builder, byteString, string8)
 import qualified Data.Expression as Exp
-import Data.FTC.FiniteTraceCalculus (constraints, ftc, mc, SideCondition, FTCProblem (..), fromFormula)
+import Data.FTC.FiniteTraceCalculus (FTCProblem (..), SideCondition, constraints, fromFormula, ftc, mc)
 import Data.Map (Map)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -16,6 +16,7 @@ import Data.Text (Text, unpack)
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Data.Trace.Program (Program (main, methods), contract, contracts, lookupMethod)
 import Data.Trace.TraceLogic (TraceFormula (..))
+import qualified Data.Variable as Variable
 import Debug.Trace (trace)
 import Prettyprinter hiding ((<+>))
 import qualified Prettyprinter as P
@@ -28,7 +29,6 @@ import SMTLIB.Backends.Process (Config (args, exe, std_err), StdStream (CreatePi
 import qualified SMTLIB.Backends.Process as SMTLIB
 import Text.Megaparsec (parse)
 import Util.PrettyUtil (mapsTo)
-import qualified Data.Variable as Variable
 
 data Validity = Valid | Counterexample [(Int, Map Text Int)] deriving (Show, Eq)
 
@@ -94,10 +94,11 @@ checkValidity cfg@(Config libCfg _) inst@(SMTInstance {conditions, problem}) = d
   let invalid = decodeUtf8 (toStrict s)
   printDebug' cfg invalid
   case invalid of
-    "sat" -> ( do
-            model <- decodeUtf8 . toStrict <$> command solver "(get-model)"
-            return $ Counterexample (counterexample vars model)
-        )
+    "sat" ->
+      ( do
+          model <- decodeUtf8 . toStrict <$> command solver "(get-model)"
+          return $ Counterexample (counterexample vars model)
+      )
     "success" -> return $ Counterexample [(-1, Map.fromList [("empty state", 0)])]
     "unsat" -> return Valid
     _ -> do
@@ -119,16 +120,16 @@ ftcCondition = ftc
 checkValidityFTC :: (Eq a, Show a) => Config' -> FTCProblem a -> IO Validity
 checkValidityFTC cfg (FTCProblem {dependencies, inst}) = case dependencies of
   [] -> checkValidity cfg inst
-  ((a, p):deps) -> do
+  ((a, p) : deps) -> do
     validity <- checkValidityFTC cfg p
-    let val = (\case {Valid -> True; Counterexample _ -> False}) validity
+    let val = (\case Valid -> True; Counterexample _ -> False) validity
     let (conds, prob) = (conditions inst, problem inst)
     let sub x = instantiateConstantPred x a val
     checkValidityFTC cfg (FTCProblem deps (SMTInstance (map sub conds) (sub prob)))
 
 counterexample :: [Text] -> Text -> [(Int, Map Text Int)]
 counterexample vars raw = case parse (parseModel vars) "SMT-solver" raw of
-  Left err -> error (show err  ++ "\n" ++ show raw)
+  Left err -> error (show err ++ "\n" ++ show raw)
   Right model -> Map.toAscList model
 
 initialState :: Validity -> Maybe (Map Text Int)
