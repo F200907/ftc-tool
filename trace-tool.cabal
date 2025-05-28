@@ -27,7 +27,6 @@ library
   exposed-modules:
       Data.Expression
       Data.ExpressionParser
-      Data.FTC.Admissibility
       Data.FTC.Contract
       Data.FTC.FiniteTraceCalculus
       Data.ProblemParser

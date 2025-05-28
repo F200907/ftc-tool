@@ -124,9 +124,6 @@ checkValidityFTC cfg (FTCProblem {dependencies, inst}) = case dependencies of
     let val = (\case {Valid -> True; Counterexample _ -> False}) validity
     let (conds, prob) = (conditions inst, problem inst)
     let sub x = instantiateConstantPred x a val
-    -- print a
-    -- print val
-    -- print prob
     checkValidityFTC cfg (FTCProblem deps (SMTInstance (map sub conds) (sub prob)))
 
 counterexample :: [Text] -> Text -> [(Int, Map Text Int)]
