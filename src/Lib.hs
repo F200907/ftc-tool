@@ -34,22 +34,23 @@ module Lib
     withDebug,
     normalise,
     depth,
-    reinforce,expandP,
+    reinforce,
+    expandP,
     constraints,
     ftcCondition,
-    Variables (..)
+    Variables (..),
   )
 where
 
 import Data.Expression
 import Data.ExpressionParser
 import Data.FTC.FiniteTraceCalculus
+import Data.ProblemParser
+import Data.Trace.Normalise
 import Data.Trace.Program
 import Data.Trace.ProgramParser
 import Data.Trace.TraceLogic
 import Data.Trace.TraceLogicParser
-import SMT.Solver
-import SMT.ModelParser
-import Data.ProblemParser
-import Data.Trace.Normalise
 import Data.Variable
+import SMT.ModelParser
+import SMT.Solver

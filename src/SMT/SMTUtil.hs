@@ -41,9 +41,12 @@ instance (SMTify ArithmeticExpr) where
   smtify (AVar x) = x
   smtify (LVar x) = x
   smtify (Negation c@(Constant _)) = "-" <> smtify c -- TODO: sometimes the negation is wrongly translated
-  smtify (Negation a) = let a' = smtify a in
-    if Text.take 1 a' == "-" then Text.drop 1 a' else 
-      smtOp ("-" <> a')
+  smtify (Negation a) =
+    let a' = smtify a
+     in if Text.take 1 a' == "-"
+          then Text.drop 1 a'
+          else
+            smtOp ("-" <> a')
   smtify (Plus a b) = smtOp ("+" <+> smtify a <+> smtify b)
   smtify (Minus a b) = smtOp ("-" <+> smtify a <+> smtify b)
   smtify (Times a b) = smtOp ("*" <+> smtify a <+> smtify b)

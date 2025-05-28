@@ -5,14 +5,14 @@
 
 module Data.Trace.ProgramParser (parseStatement, parseMethodDefinition, parseProgram) where
 
+import Data.Expression (BooleanExpr (BTrue))
 import Data.ExpressionParser (parseArithmeticExpr, parseBooleanExpr)
+import Data.FTC.Contract (Contract)
 import Data.Text (Text)
 import Data.Trace.Program (MethodDefinition, Program (Program, main, methods), Statement (Assignment, Condition, Method, Sequence, Skip))
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import Util.ParserUtil
-import Data.FTC.Contract (Contract)
-import Data.Expression (BooleanExpr(BTrue))
 
 type SParser = Parser Statement
 
@@ -82,10 +82,16 @@ parseStatement :: SParser
 parseStatement = pSequence
 
 parseContract :: Parser Contract
-parseContract = choice [try (do
-  pre <- brackets parseBooleanExpr
-  post <- brackets parseBooleanExpr
-  return (pre, post)), return (BTrue, BTrue)]
+parseContract =
+  choice
+    [ try
+        ( do
+            pre <- brackets parseBooleanExpr
+            post <- brackets parseBooleanExpr
+            return (pre, post)
+        ),
+      return (BTrue, BTrue)
+    ]
 
 parseMethodDefinition :: Parser MethodDefinition
 parseMethodDefinition = do

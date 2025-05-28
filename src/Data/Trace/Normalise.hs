@@ -1,14 +1,9 @@
 {-# LANGUAGE InstanceSigs #-}
 
--- {-# LANGUAGE OverloadedStrings #-}
-
 module Data.Trace.Normalise (Normalisable (..)) where
-
--- import Data.Text ()
 
 import Data.Trace.Program (Program (..), Statement (..))
 import Data.Trace.TraceLogic (TraceFormula (..))
-import Debug.Trace (trace)
 
 class Normalisable a where
   -- |
@@ -17,8 +12,9 @@ class Normalisable a where
 
 instance (Normalisable TraceFormula) where
   normalise :: TraceFormula -> TraceFormula
-  normalise x = let y = (distribute . assoc) x in
-    if x == y then x else normalise y
+  normalise t =
+    let y = (distribute . assoc) t
+     in if t == y then t else normalise y
     where
       assoc :: TraceFormula -> TraceFormula
       assoc tf@(StateFormula _) = tf
@@ -48,23 +44,23 @@ instance (Normalisable Statement) where
   normalise :: Statement -> Statement
   normalise = distribute . assoc
     where
-    assoc :: Statement -> Statement
-    assoc Skip = Skip
-    assoc s@(Assignment {}) = s
-    assoc s@(Method {}) = s
-    assoc (Condition b s1 s2) = Condition b (assoc s1) (assoc s2)
-    assoc (Sequence s s') = case assoc s of
-      Sequence s1 s2 -> Sequence s1 (assoc (Sequence s2 s'))
-      _ -> Sequence s (assoc s')
+      assoc :: Statement -> Statement
+      assoc Skip = Skip
+      assoc s@(Assignment {}) = s
+      assoc s@(Method {}) = s
+      assoc (Condition b s1 s2) = Condition b (assoc s1) (assoc s2)
+      assoc (Sequence s s') = case assoc s of
+        Sequence s1 s2 -> Sequence s1 (assoc (Sequence s2 s'))
+        _ -> Sequence s (assoc s')
 
-    distribute :: Statement -> Statement
-    distribute Skip = Skip
-    distribute s@(Assignment {}) = s
-    distribute s@(Method {}) = s
-    distribute (Condition b s1 s2) = Condition b (distribute s1) (distribute s2)
-    distribute (Sequence s s') = case s of
-      Condition b s1 s2 -> Condition b (normalise (Sequence s1 s')) (normalise (Sequence s2 s'))
-      _ -> Sequence (distribute s) (distribute s')
+      distribute :: Statement -> Statement
+      distribute Skip = Skip
+      distribute s@(Assignment {}) = s
+      distribute s@(Method {}) = s
+      distribute (Condition b s1 s2) = Condition b (distribute s1) (distribute s2)
+      distribute (Sequence s s') = case s of
+        Condition b s1 s2 -> Condition b (normalise (Sequence s1 s')) (normalise (Sequence s2 s'))
+        _ -> Sequence (distribute s) (distribute s')
 
 instance (Normalisable Program) where
   normalise :: Program -> Program

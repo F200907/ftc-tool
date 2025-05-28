@@ -33,8 +33,8 @@ import Data.Maybe (catMaybes)
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Text (Text)
-import Prettyprinter
 import Data.Variable (Renameable (..), Variables (..))
+import Prettyprinter
 
 type MethodName = Text
 

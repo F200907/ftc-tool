@@ -122,7 +122,7 @@ verify a = do
     Right (tf, p') -> do
       putStrLn' "Parsed trace formula:"
       putStrLn' tf
-      
+
       let normTF = normalise . expandP <$> tf
       putStrLn' "Normalised trace formula:"
       putStrLn' normTF
@@ -155,20 +155,9 @@ verify a = do
         (methods p)
       ( case normTF of
           Just tf' -> do
-            let ftc = (ftcCondition (normalise p) tf')
-            -- print ftc
+            let ftc = ftcCondition (normalise p) tf'
             valid <- checkValidityFTC (withDebug z3 (debug a)) ftc
             putStrLn' valid
-            -- mapM_
-            --   ( \inst ->
-            --       let smt = withDebug z3 (debug a)
-            --        in do
-            --             putStrLn' "Checking SMT problem:"
-            --             putStrLn' inst
-            --             valid <- checkValidity smt inst
-            --             putStrLn' valid
-            --   )
-              
           Nothing -> return ()
         )
       return ()

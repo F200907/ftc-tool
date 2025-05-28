@@ -166,7 +166,7 @@ pFalse = do
 
 pRelation :: Text -> (AExpr -> AExpr -> BExpr) -> BParser
 pRelation name relation = try $ do
-  a <- lexeme pAExp 
+  a <- lexeme pAExp
   _ <- symbol name
   relation a <$> pAExp
 

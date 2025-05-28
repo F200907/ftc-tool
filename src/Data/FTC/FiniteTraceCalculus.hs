@@ -1,4 +1,3 @@
-
 {-# HLINT ignore "Redundant IdentityPredicate" #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}

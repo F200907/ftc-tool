@@ -10,6 +10,7 @@ import Data.Maybe (fromMaybe)
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Text (Text, unpack)
+import Data.Variable (Renameable (..), VariableName, Variables (..))
 import Prettyprinter
   ( Doc,
     Pretty (pretty),
@@ -18,8 +19,6 @@ import Prettyprinter
   )
 import Util.PrettyUtil
 import Prelude hiding (lookup)
-import Data.Variable (VariableName, Variables (..), Renameable (..))
-
 
 type Valuation = Map VariableName Int
 
@@ -72,7 +71,6 @@ instance Pretty BooleanExpr where
 
 _testExpression :: BooleanExpr
 _testExpression = And BTrue (And (Not BFalse) (And (Equal (Plus (Constant 0) (AVar "x")) (Minus (Constant 1) (Constant (-7)))) (LessThan (Times (AVar "y") (AVar "y")) (Constant 19))))
-
 
 instance (Variables ArithmeticExpr) where
   variables :: ArithmeticExpr -> Set Text
@@ -145,7 +143,6 @@ instance (Substitutable BooleanExpr VariableName ArithmeticExpr) where
   substitute (Equal a b) x x' = Equal (substitute a x x') (substitute b x x')
   substitute (LessThan a b) x x' = LessThan (substitute a x x') (substitute b x x')
   substitute b _ _ = b
-
 
 instance (Renameable ArithmeticExpr) where
   rename :: ArithmeticExpr -> VariableName -> VariableName -> ArithmeticExpr

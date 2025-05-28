@@ -6,16 +6,16 @@
 module SMT.Instance (SMTInstance (..), invalidInstance, instanceOf, constantPredicates) where
 
 import Data.Set (Set)
+import qualified Data.Set as Set
 import Data.Text (Text)
+import Data.Variable
 import Prettyprinter (Doc, Pretty (..), line, vsep)
 import SMT.Formula (SMTFormula (..))
-import qualified Data.Set as Set
-import Data.Variable
 
 data SMTInstance a = SMTInstance {conditions :: [SMTFormula a], problem :: SMTFormula a} deriving (Show, Eq)
 
-instance Pretty a => Pretty (SMTInstance a) where
-  pretty :: SMTInstance a-> Doc ann
+instance (Pretty a) => Pretty (SMTInstance a) where
+  pretty :: SMTInstance a -> Doc ann
   pretty (SMTInstance {conditions, problem}) =
     (if null conditions then "" else "Conditions:" <> line <> vsep (map pretty conditions) <> line)
       <> "Problem:"
@@ -26,7 +26,7 @@ invalidInstance :: SMTInstance a
 invalidInstance = SMTInstance {conditions = [], problem = Bot}
 
 instance Variables (SMTInstance a) where
-  variables :: SMTInstance a-> Set Text
+  variables :: SMTInstance a -> Set Text
   variables (SMTInstance {conditions, problem}) = foldl (\acc smt -> acc `Set.union` variables smt) (variables problem) conditions
 
 constantPredicates :: SMTInstance a -> [a]
