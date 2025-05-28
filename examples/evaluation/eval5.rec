@@ -1,0 +1,14 @@
+"Id ~ (\X_m.(Id ~ (Sb_x^(0) || Sb_x^(x - 1) ~ Id ~ X_m))) ~ (x = 0)"
+
+[true]
+[x = 0]
+m {
+    if x <= 0 then
+        x := 0
+    else
+        x := x - 1;
+        m()
+}
+
+m();
+skip
