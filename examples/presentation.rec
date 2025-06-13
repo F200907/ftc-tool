@@ -1,0 +1,15 @@
+"Sb_y^(x) ~ (true) ~ Id"
+
+[true]
+[x = 0]
+m {
+    if x <= 0 then
+        x := 0
+    else
+        x := x - 1;
+        m()
+}
+
+y := x;
+m();
+y := y - x
